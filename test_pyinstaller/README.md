@@ -7,16 +7,20 @@ kommandolinje- argumenter
 
 ```
 cd dist
+test.exe
 test.exe testinput.json 
+test.exe testinput.json TJOBING
 ```
 
-(evt med "./" foran filnavnene, typisk powershell) 
+(evt med ".\" foran filnavnene, typisk powershell) 
 
 ### Alternativ 2: Angi argumenter direkte på kommandolinjen
 
 ```
-test.exe tjobing
-test.exe "Langt argument, typisk sti til mappe med vegbilder"
+cd dist
+test.exe
+test.exe TJOBING
+test.exe "../../lang/kronglete/sti/til/vegbildemappe" "sti/til/dit/resultatene/skal/ligge" 
 ``` 
  
 ### Kjøring av pyinstaller
