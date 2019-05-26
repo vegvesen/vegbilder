@@ -16,13 +16,12 @@ def hoved( arg1='dummy'):
     
     
 if __name__ == "__main__":
-    inputfil = 'testinput.json' 
     if len( sys.argv) > 1: 
         inputarg = sys.argv[1]
     
 
         # Leser oppsett fra *.json-fil    
-        if '.json' in inputfil[-5:].lower():
+        if '.json' in inputarg[-5:].lower():
             with open( inputarg) as f: 
                 myinput = json.load( f) 
                
