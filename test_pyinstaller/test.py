@@ -10,8 +10,8 @@ import json
 import sys
 
 def hoved( arg1='dummy'): 
-    print( "Hello, world")
-    print( 'Arg 1', arg1) 
+    print( "Hovedrutine, her er mine argumenter:")
+    print( 'Argument 1:', arg1) 
     time.sleep( 1)
     
     
@@ -26,10 +26,14 @@ if __name__ == "__main__":
                 myinput = json.load( f) 
                
             if 'arg1' in myinput.keys(): 
+                print( "Henter argumenter fra angitt .json-fil:", inputarg ) 
                 print( "Kjører kommando:\nhoved(", myinput['arg1'], ')'  )
                 hoved( arg1=myinput['arg1']) 
                 
         else: 
+            print( "Argument = tekst fra kommandolinje:" ) 
+            print( "Kjører kommando: \nhoved(" , inputarg, ")" )  
+            
             hoved( inputarg )
        
     else: 
@@ -40,7 +44,7 @@ if __name__ == "__main__":
         print( "")
         print( "  1. Angi filnavn (*.json) for oppsettfil med nødvendige argumenter")
         print( "  ")
-        print( "        test.exe oppsettfil_test.json")
+        print( "        test.exe testinput.json")
         print( "  ")
         print( "  2. Angi argumentene direkte fra kommandonlinjen ")
         print( "        ")
