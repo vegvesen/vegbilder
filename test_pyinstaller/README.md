@@ -7,16 +7,17 @@ kommandolinje- argumenter
 
 ```
 cd dist
-.\test.exe .\testinput.json 
+test.exe testinput.json 
 ```
 
+(evt med "./" foran filnavnene, typisk powershell) 
 
 ### Alternativ 2: Angi argumenter direkte på kommandolinjen
 
-Dette har jeg ikke fått til å fungere på windows.
-
-En mulighet skal være  [denne oppskriften](https://stackoverflow.com/questions/25984395/after-compiling-python-program-how-to-input-arguments
- som legger argumentene inn i en windows-snarvei, men dette fikk jeg ikke til.  
+```
+test.exe tjobing
+test.exe "Langt argument, typisk sti til mappe med vegbilder"
+``` 
  
 ### Kjøring av pyinstaller
 
