@@ -42,18 +42,19 @@ oppdaterte metadata dit. Orginale metadata er selvsagt med videre.
 
 Metadata (alle json-filene) legges i en romlig (spatial) database 
 (postgis, oracle spatial), og vi bygger kule tjenester 
-oppå der igjen! I første omgang konsentrerer vi oss om å bygge WFS 
-(web feature services, dvs spørre- og søketjenester for metadata) og 
-WMS (Web map services, dvs ferdige kartlag). Metadata fra disse 
-tjenestene inkluderer selvsagt lenke (url) til en webserver som serverer
+oppå der igjen! I første omgang konsentrerer vi oss om å bygge _WFS 
+(web feature services, dvs spørre- og søketjenester)_ og 
+WMS _(Web map services, dvs ferdige kartlag)_. Metadata fra disse 
+tjenestene inkluderer selvsagt lenke (url) til den webserveren vi har satt opp
+for å servere
 vegbildene direkte fra disk. 
 
 Vi bruker FME for å synkronisere metadata-databasen med det som finnes på disk. 
 FME støvsuger disk etter nye og gamle JSON-filer, og oppdaterer databasen
 direkte. I tillegg skriver FME et tidsstempel i alle json-filene for når dette
 metadata-elementet ble oppdatert. Nøkkelen ligger selvsagt i UUID som ble opprettet 
-i steg 1, og som blir med videre gjennom steg 2 (stedfesting) og steg 3 (oppdatering
-av vegreferanse, med tilhørende oppdatering av fil- og mappenavn)  
+i steg 1, og som blir med videre gjennom steg 2 _(stedfesting)_ og steg 3 _(oppdatering
+av vegreferanse, med tilhørende oppdatering av fil- og mappenavn)_.
 
 
 # Filstruktur
@@ -86,4 +87,17 @@ vegbilder/                <- Dette repositoryet
    |__dist/
       |__test.exe         <- Demo, kjørbar fil for windows
 ```
+
+# Blir anonymiserte vegbilder tilgjengelig utenfor Statens vegvesen? 
+
+Parallelt med metadata-aktiviteten beskrevet her pågår det også innfasing av 
+et system som anonymiserer vegbildene, dvs sladder personer og kjøretøy fra bildet.
+Vil vi publisere disse vegbildene til entreprenører som trenger dem, evt legge 
+dem ut som helt åpne tjenester? 
+
+**Svaret per 27.mai 2019 er: Aner ikke.** 
+
+Åpen publisering er intensjonen til oss som lager systemet beskrevet her, 
+men A) vi må først få det til å funke, B) kjøre en god beslutningsprosess 
+ang publisering. 
 
