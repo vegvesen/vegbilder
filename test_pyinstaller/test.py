@@ -48,3 +48,5 @@ if __name__ == "__main__":
         print( '        test.exe "argument 1 (typisk langt og kronglete mappenavn" ')
         print( "")
         print( "")
+		
+    time.sleep( 2) 
