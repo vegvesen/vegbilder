@@ -10,7 +10,8 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# Trenger dist-undermappen fordi det er der *.exe-filene havner 
+# dist 
 downloads/
 eggs/
 .eggs/
