@@ -43,6 +43,7 @@ import re
 from datetime import datetime
 import fnmatch
 import sys
+import time
 
 from PIL import Image # Må installeres, pakken heter PILLOW  
 from PIL.ExifTags import TAGS, GPSTAGS
@@ -477,7 +478,7 @@ if __name__ == '__main__':
 
     overskrivGammalJson = False
     datadir = None 
-    print( "Versjon 1.0 27.05.2019") 
+    print( "Versjon 1.1 27.05.2019") 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
         print( 'vegbilder_lesexif.exe "../eksempelbilder/"')
@@ -487,6 +488,7 @@ if __name__ == '__main__':
         print( 'vegbilder_lesexif.exe oppsettfil_lesexif.json overskriv\n') 
         print( 'Parameter #2 overskriv vil overskrive eventuelle metadata-elementer', 
                 'som finnes fra før (bildemappe/bildefilnavn.json)\n' ) 
+        time.sleep( 1.5) 
         
     else: 
         if len( sys.argv ) > 2 and 'overskriv' in sys.argv[2].lower(): 
