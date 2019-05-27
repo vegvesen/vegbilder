@@ -17,6 +17,8 @@ def hoved( arg1='dummy', arg2="Uendret, bruker standard i hovedfunksjonen"):
     
 if __name__ == "__main__":
 
+    print( "versjon 1.0, 27.05.2019") 
+
     arg1 = None
     arg2 = "Defaultverdi for argument 2" 
     flagg_arg2_i_json = False
