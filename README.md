@@ -6,9 +6,7 @@ Lager metadata for vegbilder tatt med Viatech utstyr: Les EXIF-header, stedfest,
 
 # Tre rutiner for håndtering av vegbilder og metadata om vegbilder
 
-### 1. Lag metadata
-
-*(kommer snart!)*
+### Trinn 1: Lag metadata
 
 Leser metadata fra EXIF-header og (littegrann) metadata fra filnavn og mappenavn til bildet. 
 Hvert bilde får en unik id (UUID), samt referanse til UUID for forrige og neste bilde. 
@@ -16,7 +14,7 @@ Hvert bilde får en unik id (UUID), samt referanse til UUID for forrige og neste
 
 Metadata skrives til en json-fil med samme filnavn som bildet. 
 
-### 2. Stedfest metadata 
+### Trinn 2. Stedfest metadata 
 
 *(kommer snart!)*
 
@@ -25,7 +23,7 @@ på historisk vegrefeanse (per bildedato, med Visveginfo-tjenesten). Metadata ut
 med veglenkeID, veglenkeposisjon og koordinater for vegens senterlinje. Resultatet skrivest
 tilbake til json-filen.
 
-### 3. Oppdater vegreferanse-verdier
+### Trinn 3. Oppdater vegreferanse-verdier og lag nye fil/mappenavn
 
 *(kommer snart!)*
 
