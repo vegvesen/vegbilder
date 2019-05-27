@@ -67,10 +67,11 @@ Ergo føyer vi oss etter filstrukturen til pyinstaller.
 vegbilder/                <- Dette repositoryet
 |__README.md              <- Den fila du leser nå
 |
-|__STEG1_mappe/ (kommer snart)
-   |__python-kode for steg 1 (kommer snart)  
+|__trinn1_lagmetadata/ 
+   |__vegbilder_lesexif.py           <- Program som skal kompileres
    |__dist/
-      |__ *.exe 
+      |___vegbilder_lesexif.exe      <- Kjørbar fil
+      |___vegbilder_lesexif.json     <- Eksempel, oppsettfil
 
 |__Steg_2_mappe/ (kommer snart
     |__ div python-kode
@@ -81,7 +82,22 @@ vegbilder/                <- Dette repositoryet
     |__ div python-kode
     |__dist/ 
        |__ *.exe 
-      
+
+|__testbilder/
+   |__06/
+      |__2018/
+         |__06_Ev134/
+            |__Hp05_Damåsen/
+               |__F1_2018_06_21/
+                  Fy06_Ev134_hp05_f1_m03173.jpg
+                  Fy06_Ev134_hp05_f1_m03192.jpg
+                  Fy06_Ev134_hp05_f1_m03212.jpg
+                  Fy06_Ev134_hp05_f1_m03232.jpg
+                  Fy06_Ev134_hp05_f1_m03252.jpg
+                  Fy06_Ev134_hp05_f1_m03272.jpg
+                  Fy06_Ev134_hp05_f1_m03292.jpg
+                  
+
 |__test_pyinstaller/
    |__test.py             <-  Program som skal kompileres
    |__dist/
