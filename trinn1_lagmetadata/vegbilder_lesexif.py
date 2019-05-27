@@ -49,7 +49,7 @@ from PIL.ExifTags import TAGS, GPSTAGS
 import requests # må installeres, rett fram
 import xmltodict # Må installeres, rett fram 
 
-import ipdb
+# import ipdb
 
 def indekserbildemappe( datadir, overskrivGammalJson=False ): 
     """
