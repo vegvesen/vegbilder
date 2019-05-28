@@ -127,71 +127,97 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
             bildefiler.sort() 
        
         for etbilde in bildefiler: 
+                       
+            bildefil = os.path.join( os.path.join( mappe, etbilde) )
+            (basename, ext) = os.path.splitext( bildefil) 
+            jsonFileName = basename + '.json'
+            
+            if not os.path.isfile( basename + '.json') or overskrivGammalJson: 
+            
+                json_finnes = False
+                if os.path.isfile( basename + '.json'): 
+                    json_finnes = True 
+            
+                try: 
+                    writeEXIFtoFile( bildefil) 
+                except OSError as e: 
+                    print( "Feil med EXIF lesning og/eller json-skriving av metadata:", e) 
+                else: 
+                    
+                    if json_finnes:
+                        countOverskrevet += 1
+                    else: 
+                        countNyeIndeksertebilder += 1
+            
+            else:
+                countAlleredeIndeksert += 1
+            
+            
             
             # Henter relevante data fra EXIF-header 
-            try: 
-                metadata = lesexif( os.path.join( mappe, etbilde )) 
-            except (AttributeError, TypeError): 
-                print( 'QA-feil: Kan ikke lese EXIF-header fra bildefil', os.path.join( mappe, etbilde) ) 
+            # try: 
+                # metadata = lesexif( os.path.join( mappe, etbilde )) 
+            # except (AttributeError, TypeError): 
+                # print( 'QA-feil: Kan ikke lese EXIF-header fra bildefil', os.path.join( mappe, etbilde) ) 
             
-            else: 
+            # else: 
 
-                metadata['temp_filnavn'] =  os.path.join( mappe, etbilde) 
+                # metadata['temp_filnavn'] =  os.path.join( mappe, etbilde) 
                 
                 # Legger vianova-xml'en sist
-                imageproperties = metadata.pop( 'exif_imageproperties' ) 
+                # imageproperties = metadata.pop( 'exif_imageproperties' ) 
                 
                 # Retning og feltkode
-                metadata['retning'] = meta_retning
-                metadata['filnavn_feltkode'] = meta_kjfelt
+                # metadata['retning'] = meta_retning
+                # metadata['filnavn_feltkode'] = meta_kjfelt
               
                 
                 # Utleder riktig mappenavn 
-                metadata['mappenavn'] = utledMappenavn( mappe) 
+                # metadata['mappenavn'] = utledMappenavn( mappe) 
             
                 # Unik ID for hvert bilde, og felles ID for alle bilder i samme mappe
-                metadata['datafangstuuid'] = meta_datafangst_uuid
-                metadata['bildeuiid'] = str( uuid.uuid4() )
-                metadata['forrige_uuid'] = None
-                metadata['neste_uuid'] = None
+                # metadata['datafangstuuid'] = meta_datafangst_uuid
+                # metadata['bildeuiid'] = str( uuid.uuid4() )
+                # metadata['forrige_uuid'] = None
+                # metadata['neste_uuid'] = None
                 
                 # Legger vianova-xml'en sist
-                metadata['exif_imageproperties' ] = imageproperties
+                # metadata['exif_imageproperties' ] = imageproperties
                 
                 # Legger til et par tagger for administrering av metadata
-                metadata['stedfestet'] = 'NEI'
-                metadata['indeksert_i_db'] = None
+                # metadata['stedfestet'] = 'NEI'
+                # metadata['indeksert_i_db'] = None
                 
                 # Føyer på den korte listen
-                templiste.append(  metadata)
+                # templiste.append(  metadata)
                 
-         # Lenkar sammen den lenkede listen 
-        for ii in range( 0, len(templiste)): 
+        # Lenkar sammen den lenkede listen 
+        # for ii in range( 0, len(templiste)): 
             
             # Forrige element i listen
-            if ii > 0 and ii < len(templiste): 
-                templiste[ii]['forrige_uuid']    = templiste[ii-1]['bildeuiid']
+            # if ii > 0 and ii < len(templiste): 
+                # templiste[ii]['forrige_uuid']    = templiste[ii-1]['bildeuiid']
             
             # Neste element     
-            if ii < len(templiste)-1: 
-                templiste[ii]['neste_uuid']    = templiste[ii+1]['bildeuiid']
+            # if ii < len(templiste)-1: 
+                # templiste[ii]['neste_uuid']    = templiste[ii+1]['bildeuiid']
         
         # Skriver json-fil med metadata til fil
-        for bildefil in templiste:
+        # for bildefil in templiste:
         
-            filnavn = os.path.splitext( bildefil['temp_filnavn'])[0]  +  '.json' 
-            if (not os.path.isfile( filnavn)) or overskrivGammalJson:  
-                junk = bildefil.pop( 'temp_filnavn') 
-                if os.path.isfile( filnavn):
-                    countOverskrevet += 1
+            # filnavn = os.path.splitext( bildefil['temp_filnavn'])[0]  +  '.json' 
+            # if (not os.path.isfile( filnavn)) or overskrivGammalJson:  
+                # junk = bildefil.pop( 'temp_filnavn') 
+                # if os.path.isfile( filnavn):
+                    # countOverskrevet += 1
                 
-                with open( filnavn, 'w') as f: 
-                    json.dump( bildefil, f, indent=4, ensure_ascii=False) 
-                countNyeIndeksertebilder += 1
+                # with open( filnavn, 'w') as f: 
+                    # json.dump( bildefil, f, indent=4, ensure_ascii=False) 
+                # countNyeIndeksertebilder += 1
 
-            else: 
+            # else: 
 
-                countAlleredeIndeksert += 1
+                # countAlleredeIndeksert += 1
     
     dt = datetime.now() - t0
     print( "laget metadata for", countNyeIndeksertebilder, "bilder på", dt.total_seconds(), 'sekunder') 
