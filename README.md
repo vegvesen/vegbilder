@@ -69,18 +69,19 @@ vegbilder/                <- Dette repositoryet
       |__ vegbilder_lesexif.exe      <- Kjørbar fil
       |__ vegbilder_lesexif.json     <- Eksempel, oppsettfil
 
-|__Steg_2_mappe/ 
+|__ trinn2_stedfest/ 
     |__ stedfestvegbilder.py
     |__ dist/ 
        |__ stedfestvegbilder.exe
        |__ oppsettfil_stedfest.json        
        
-|__Steg_3_mappe (kommer snart) 
-    |__ div python-kodes
+|__ trinn3_oppdatervegref/
+    |__ flyttvegbilder.py
     |__ dist/ 
-       |__ *.exe 
+       |__ flyttvegbilder.exe
+       |__ oppsettfil_flyttvegbilder.json       
 
-|__testbilder/
+|__testbilder_orginal/
    |__ 06/
       |__ 2018/
          |__ 06_Ev134/
@@ -94,6 +95,9 @@ vegbilder/                <- Dette repositoryet
                    Fy06_Ev134_hp05_f1_m03272.jpg
                    Fy06_Ev134_hp05_f1_m03292.jpg
                   
+|__ testbilder_prosessert/            <-(som testbilder, men prosessert-eksempler
+    |__ (masse undermapper og *.jpg, *.json filer) 
+
 
 |__ test_pyinstaller/
    |__ test.py             <-  Program som skal kompileres
