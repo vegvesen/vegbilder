@@ -52,6 +52,26 @@ import xmltodict # Må installeres, rett fram
 
 # import ipdb
 
+def writeEXIFtoFile(imageFileName):
+    """
+    Leser EXIF og skriver JSON-fil med metadata. Tilpasset firmaet "Signatur" sin kode
+    
+    Denne rutinen må kjøres FØR bildet er sladdet, fordi relevant EXIF-informasjon da slettes. 
+    """ 
+    
+    try: 
+        metadata = lesexif( imageFileName) 
+    except (AttributeError, TypeError): 
+        raise OSError('lesexif routine failed for '+ imageFileName ) 
+    else: 
+    
+        (basename, ext) = os.path.splitext( imageFileName) 
+        jsonFileName = basename + '.json'
+        
+        with open( jsonFileName, 'w') as fw: 
+            json.dump( metadata, fw, indent=4, ensure_ascii=False) 
+
+
 def indekserbildemappe( datadir, overskrivGammalJson=False ): 
     """
     Finner alle mapper med vegbilder og omsetter til metadata 
@@ -328,54 +348,6 @@ def formatvegref( fylke, kommune, vegkat, vegstat, vegnummer, hp, meter):
             str(vegnummer).rjust(5, '0') + str(hp).rjust(3, '0') + str(meter).rjust(5, '0') 
     return vegref
 
-def visveginfokall( properties, ViewDate=None): 
-    """
-    Stedfester med visveginfo-tjensten ut fra vegreferanse-informasjon som nå ligger i metadataene
-    """
-    p = properties
-    vegref = formatvegref( p['fylke'], 0, p['vegkategori'], p['vegstatus'], p['vegnr'], p['hp'], p['meter'] )
-    
-    params = { 'roadReference' : vegref, 'ViewDate' : p['dato'], 'topologyLevel' : 'Overview' } 
-    
-    # Kan evt overstyre datostempelet
-    if ViewDate:
-        params['ViewDate'] = ViewDate
-    
-    url = 'http://visveginfo-static.opentns.org/RoadInfoService3d/GetRoadReferenceForReference' 
-    r = requests.get( url, params=params)
-    vvidata = xmltodict.parse( r.text )
-    
-    ## Hvis vi ikke får gyldig vegrefeanse - prøv med annen dato
-    # if ViewDate and not 'RoadReference' in vvidata['ArrayOfRoadReference'].keys(): 
-        # print( 'Visveginfo-kall', vegref, 'feiler for dato', ViewDate, 'prøver med dato', p['dato'] ) 
-        # params['ViewDate'] = p['dato'] 
-        # r = requests.get( url, params=params)
-        # vvidata = xmltodict.parse( r.text) 
-    
-    if 'ArrayOfRoadReference' in vvidata.keys() and 'RoadReference' in vvidata['ArrayOfRoadReference'].keys(): 
-        
-        vvi = vvidata['ArrayOfRoadReference']['RoadReference']
-
-        geometry = { 'type' : 'Point', 
-                      'coordinates' : [ round( float( vvi['RoadNetPosition']['X']), 3), 
-                                        round( float( vvi['RoadNetPosition']['Y']), 3), 
-                                        round( float( vvi['RoadNetPosition']['Z']), 3) ]
-                      }
-                      
-        vviprops = { 'veglenkeid' : int( vvi['ReflinkOID']), 
-                     'veglenkepos' : round( float( vvi['Measure']), 8), 
-                     'allefelt' : vvi['LaneCode'], 
-                     'lenkeretning' : round( float( vvi['RoadnetHeading']), 3), 
-                     'visveginfoparams' : params, 
-                     'visveginfosuksess' : True }
-                     
-                     
-    else: 
-        print( 'Ugyldig vegreferanse', vegref, 'for dato', params['ViewDate'] ) 
-        geometry = None
-        vviprops = { 'visveginfoparams' : params, 'visveginfosuksess' : False } 
-
-    return (geometry, vviprops) 
 
 
 #% -------------------------------------------------------
