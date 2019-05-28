@@ -130,8 +130,10 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
             meta = json.load(f)    
  
         # Stedfester kun dem som ikke er stedfestet fra før: 
-        if overskrivStedfesting or (not 'stedfestet' in meta.keys() or \
-                                            meta['stedfestet'].upper() != 'JA'): 
+        if overskrivStedfesting or (not 'stedfestet' in meta.keys() or       \
+                                ('stedfestet' in meta.keys()                 \
+                                    and isinstance( meta['stedfestet'], str) \
+                                    and meta['stedfestet'].upper() != 'JA' )): 
             count += 1
             meta = visveginfo_vegreferanseoppslag( meta) 
             with open( filnavn, 'w') as fw: 
@@ -158,7 +160,7 @@ if __name__ == '__main__':
     datadir = None
     overskrivStedfesting = False
     
-    print( "Versjon 1.0 27.05.2019") 
+    print( "Versjon 1.1 28.05.2019") 
     if len( sys.argv) < 2: 
 
         print( "BRUK:\n")
