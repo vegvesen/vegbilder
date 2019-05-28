@@ -16,6 +16,7 @@ import pdb # debug
 from copy import deepcopy 
 from pathlib import Path
 from shutil import copyfile
+import sys
 
 
 import requests
@@ -94,7 +95,7 @@ def visveginfo_veglenkeoppslag( metadata):
         metadata['ny_visveginfosuksess'] = False
 
         
-    metadata['vegreferansedato'] = params['ViewDate']     
+    metadata['vegreferansedato'] = datetime.today().strftime('%Y-%m%d')      
     metadata['exif_imageproperties'] = exif_imageproperties
     return metadata
 
@@ -449,7 +450,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-       print( "Versjon 1.1 27.05.2019") 
+    print( "Versjon 1.1 27.05.2019") 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
         print( 'flyttvegbilder.exe "../../testbilder_prosessert/", "../../testbilder_nystedfesting')
