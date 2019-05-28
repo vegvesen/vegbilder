@@ -23,8 +23,6 @@ tilbake til json-filen.
 
 ### Trinn 3. Oppdater vegreferanse-verdier og lag nye fil/mappenavn
 
-*(kommer snart!)*
-
 Statens vegvesen har (eldre) programvare som er avhengig av at mappe- og filnavn for 
 vegbilder følger oppbyggingen av vegreferansen 
 (år - fylke - vegkategori, status og nummer - hp - meter). 
