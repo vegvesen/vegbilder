@@ -65,6 +65,7 @@ def writeEXIFtoFile(imageFileName):
         raise OSError('lesexif routine failed for '+ imageFileName ) 
     else: 
     
+        # metadata['bildeuiid'] = str( uuid.uuid4() )
         (basename, ext) = os.path.splitext( imageFileName) 
         jsonFileName = basename + '.json'
         
