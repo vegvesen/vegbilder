@@ -1,4 +1,4 @@
 { "info" : "JSON parametre for vegbilder_lesexif", 
-    "datadir" : "../../testbilder",
+    "datadir" : "../../testbilder_prosessert/orginal_stedfesting",
   "info2": "Kan også inneholde valgfri parameter overskrivGammalJson = true | false", 
-  "overskrivGammalJson" : false }
+  "overskrivGammalJson" : true }

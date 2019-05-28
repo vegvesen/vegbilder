@@ -90,15 +90,15 @@ def visveginfo_vegreferanseoppslag( metadata):
                       
         metadata['veglenkeid']  = int( vvi['ReflinkOID'] )
         metadata['veglenkepos'] = round( float( vvi['Measure']), 8)
-        metadata['allefelt']    =  vvi['LaneCode']
+        metadata['feltoversikt']    =  vvi['LaneCode']
+        metadata['feltoversikt_perbildedato']     =  vvi['LaneCode']
         metadata['lenkeretning'] =  round( float( vvi['RoadnetHeading']), 3)
+        metadata['lenkeretning_perbildedato'] =  round( float( vvi['RoadnetHeading']), 3)
         # metadata['visveginfoparams'] =  params 
         # metadata['visveginfosuksess'] =  True 
         metadata['stedfestet'] = 'JA'
         
         # Legger på vegreferanse-informasjon slik at bildet blir søkbart. 
-        metadata['ny_allefelt']     =  vvi['LaneCode']
-        metadata['ny_lenkeretning'] =  round( float( vvi['RoadnetHeading']), 3)
         metadata['fylke']        = int( vvi['County'] )
         metadata['kommune']      = int( vvi['Municipality'] ) 
         metadata['vegkat']       = vvi['RoadCategory'] 
@@ -109,13 +109,22 @@ def visveginfo_vegreferanseoppslag( metadata):
 
         metadata['vegreferansedato'] = params['ViewDate'] 
         
+        metadata['feltkode'] = metadata['exif_feltkode']
+        if 'filnavn' not in metadata.keys(): 
+            metadata['filnavn'] = re.sub( '.jpg', '', metadata['exif_filnavn'] ) 
+            metadata['filnavn'] = re.sub( '.JPG', '', metadata['filnavn'] ) 
+
+        metadata['retningsnudd'] = 'ikkesnudd'
+        metadata['strekningsreferanse'] = metadata['exif_strekningreferanse']
+            
     else: 
         print( 'Ugyldig vegreferanse', vegref, 'for dato', params['ViewDate'] ) 
         geometry = None
         # metadata['visveginfoparams'] = params
         metadata['visveginfosuksess'] =  False 
         metadata['stedfestet'] = 'Ugyldig'
-        
+       
+    metadata['stedfestingdato'] = datetime.today().strftime('%Y-%m-%d')
     metadata['exif_imageproperties'] = exif_imageproperties
 
     return metadata

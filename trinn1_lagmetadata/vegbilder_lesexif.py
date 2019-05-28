@@ -138,7 +138,7 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
                 metadata['exif_imageproperties' ] = imageproperties
                 
                 # Legger til et par tagger for administrering av metadata
-                metadata['stedfestet'] = None
+                metadata['stedfestet'] = 'NEI'
                 metadata['indeksert_i_db'] = None
                 
                 # Føyer på den korte listen
