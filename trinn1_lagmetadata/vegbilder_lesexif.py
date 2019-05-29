@@ -61,7 +61,7 @@ def writeEXIFtoFile(imageFileName):
     
     try: 
         metadata = lesexif( imageFileName) 
-    except (AttributeError, TypeError): 
+    except (AttributeError, TypeError,IndexError): 
         raise OSError('lesexif routine failed for '+ imageFileName ) 
     else: 
     
@@ -131,7 +131,7 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
             # Henter relevante data fra EXIF-header 
             try: 
                 metadata = lesexif( os.path.join( mappe, etbilde )) 
-            except (AttributeError, TypeError, IndexError): 
+            except (AttributeError, TypeError): 
                 print( 'QA-feil: Kan ikke lese EXIF-header fra bildefil', os.path.join( mappe, etbilde) ) 
             
             else: 
@@ -278,6 +278,21 @@ def fiskFraVianovaXML(imagepropertiesxml):
     mappenavn = re.sub( r'\\', '/', ip['ImageProperties']['ImageName'] )
     mapper = mappenavn.split('/') 
     
+    if len( exif_veg) >= 3:
+        exif_vegnr   = exif_veg[2:]
+        exif_vegstat = exif_veg[1]
+        exif_vegkat  = exif_veg[0]
+    else: 
+        exif_vegnr   = exif_veg
+        exif_vegstat = None
+        exif_vegkat  = None 
+    
+    lovlig_vegstatus = ["S", "H", "W", "A", "P", "E", "B", "U", "Q", "V", "X", "M", "T", "G" ]
+    lovlig_vegkat = ["E", "R", "F", "K", "P", "S" ] 
+
+    if exif_vegstat not in lovlig_vegstatus or exif_vegkat not in lovlig_vegkat: 
+        print( 'VCRoad=', exif_veg, 'følger ikke KAT+STAT+vegnr syntaks:', mappenavn ) 
+        
     
     retval =  { 
                 'exif_tid' : tidsstempel,
@@ -287,9 +302,9 @@ def fiskFraVianovaXML(imagepropertiesxml):
                 'exif_gpsposisjon' : ewkt, 
                 'exif_strekningsnavn' : ip['ImageProperties']['VegComValues']['VCArea'], 
                 'exif_fylke'          : ip['ImageProperties']['VegComValues']['VCCountyNo'], 
-                'exif_vegkat'        : exif_veg[0],
-                'exif_vegstat'       : exif_veg[1],
-                'exif_vegnr'         : exif_veg[2:], 
+                'exif_vegkat'        : exif_vegkat,
+                'exif_vegstat'       : exif_vegstat,
+                'exif_vegnr'         : exif_vegnr, 
                 'exif_hp'            : ip['ImageProperties']['VegComValues']['VCHP'], 
                 'exif_meter'            : ip['ImageProperties']['VegComValues']['VCMeter'], 
                 'exif_feltkode'            : ip['ImageProperties']['VegComValues']['VCLane'], 
