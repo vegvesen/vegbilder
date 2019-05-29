@@ -156,9 +156,10 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     print( 'Stedfestet', count, 'av', len(jsonfiler), 'vegbilder på', dt.total_seconds(), 'sekunder') 
 
 
-def stedfest_bildemappe(): 
+def stedfest_bildemappe(datadir, overskrivStedfesting=False): 
     # Finner alle mapper med json-filer: 
-    folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if os.path.splitext(file_)[1] == '.jpg')
+    # folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if os.path.splitext(file_)[1] == '.')
+    folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if re.search( "fy[0-9]{1,2}.*hp.*m[0-9]{1,6}.json", file_, re.IGNORECASE)  )
 
  
 
@@ -231,5 +232,6 @@ if __name__ == '__main__':
             print( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
         else: 
             print( 'Stedfester metadata i mappe', datadir ) 
-            stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting )  
+            # stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting )  
+            stedfest_bildemappe( datadir, overskrivStedfesting=overskrivStedfesting )  
     
