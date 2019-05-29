@@ -466,7 +466,7 @@ if __name__ == '__main__':
 
     overskrivGammalJson = False
     datadir = None 
-    print( "Versjon 1.2 28.05.2019") 
+    print( "Versjon 1.3 29.05.2019 kl 12:58") 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
         print( 'vegbilder_lesexif.exe "../eksempelbilder/"')
