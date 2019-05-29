@@ -154,6 +154,23 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
  
     dt = datetime.now() - t0
     print( 'Stedfestet', count, 'av', len(jsonfiler), 'vegbilder på', dt.total_seconds(), 'sekunder') 
+
+
+def stedfest_bildemappe(): 
+    # Finner alle mapper med json-filer: 
+    folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if os.path.splitext(file_)[1] == '.jpg')
+
+ 
+
+def formatvegref( fylke, kommune, vegkat, vegstat, vegnummer, hp, meter): 
+    """
+    Formatterer en vegreferanse-streng som kan brukes i kall til visveginfo
+    """
+    
+    vegref = str(fylke).rjust(2, '0') + str(kommune).rjust(2, '0') + vegkat.upper() + vegstat.upper() + \
+            str(vegnummer).rjust(5, '0') + str(hp).rjust(3, '0') + str(meter).rjust(5, '0') 
+    return vegref
+
  
 def test( ): 
     jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where='.') 
