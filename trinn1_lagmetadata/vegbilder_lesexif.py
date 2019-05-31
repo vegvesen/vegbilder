@@ -131,7 +131,7 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
             # Henter relevante data fra EXIF-header 
             try: 
                 metadata = lesexif( os.path.join( mappe, etbilde )) 
-            except (AttributeError, TypeError): 
+            except (AttributeError, TypeError, UnicodeDecodeError): 
                 print( 'QA-feil: Kan ikke lese EXIF-header fra bildefil', os.path.join( mappe, etbilde) ) 
             
             else: 
@@ -466,7 +466,8 @@ if __name__ == '__main__':
 
     overskrivGammalJson = False
     datadir = None 
-    print( "Versjon 1.3 29.05.2019 kl 12:58") 
+    versjonsinfo = "Versjon 1.4 31.05.2019 kl xx"
+    print( versjonsinfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
         print( 'vegbilder_lesexif.exe "../eksempelbilder/"')
@@ -517,6 +518,8 @@ if __name__ == '__main__':
             if overskrivGammalJson: 
                 print( 'Overskriver alle eldre metadata som måtte finnes fra før') 
             indekserbildemappe( datadir, overskrivGammalJson=overskrivGammalJson) 
-        
+
+    print( versjonsinfo ) 
+
     # datadir = '../bilder/testdataRegS/'
     # datadir = '../bilder/litensample_regS/06/2018/06_Ev134/Hp422_Myntbrua_rkj_E134_X_fv__87/F1_2018_06_21'
