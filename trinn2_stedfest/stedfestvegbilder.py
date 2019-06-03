@@ -304,7 +304,8 @@ if __name__ == '__main__':
     datadir = None
     overskrivStedfesting = False
     
-    print( "Versjon 1.1 28.05.2019") 
+    versjonsinfo = "Versjon 2.0 den 3. juni 2019 kl 15:31"
+    print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
         print( "BRUK:\n")
@@ -351,4 +352,6 @@ if __name__ == '__main__':
             print( 'Stedfester metadata i mappe', datadir ) 
             sorter_mappe_per_meter( datadir ) 
             stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting )  
-    
+
+    print( versjonsinfo ) 
+ 
