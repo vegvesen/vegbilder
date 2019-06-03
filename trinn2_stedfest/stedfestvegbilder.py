@@ -5,6 +5,7 @@ hentet fra Visveginfo-tjensten.
 """ 
 
 import os 
+import uuid
 import fnmatch 
 import re
 import glob
@@ -15,6 +16,10 @@ import time
 
 import requests
 import xmltodict # Må installeres, rett fram 
+
+def utledMappenavn( mappe ):
+    mapper = mappe.split('/') 
+    return '/'.join( mapper[-5:-1]) 
 
 
 def recursive_findfiles(which, where='.'):
@@ -156,13 +161,125 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     print( 'Stedfestet', count, 'av', len(jsonfiler), 'vegbilder på', dt.total_seconds(), 'sekunder') 
 
 
-def stedfest_bildemappe(datadir, overskrivStedfesting=False): 
-    # Finner alle mapper med json-filer: 
+def sorter_mappe_per_meter(datadir, overskrivStedfesting=False): 
+    # Finner alle mapper med json-filer, sorterer bildene med forrige-neste logikk
+    # 
     # folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if os.path.splitext(file_)[1] == '.')
     folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if re.search( "fy[0-9]{1,2}.*hp.*m[0-9]{1,6}.json", file_, re.IGNORECASE)  )
 
- 
+    for mappe in folders: 
+        print( "Leter i mappe", mappe) 
 
+        templiste = []
+        meta_datafangst_uuid = str( uuid.uuid4() )
+
+        jsonfiler = findfiles( 'fy*hp*m*.json', where=mappe) 
+
+        # Finner feltinformasjon ut fra mappenavn F1_yyyy_mm_dd 
+        feltnr = 1 # Default
+        (rotmappe, feltmappe) = os.path.split( mappe) 
+        feltmappebiter = feltmappe.split( '_') 
+        meta_kjfelt = feltmappebiter[0]
+        
+        if len( feltmappebiter) != 4 or meta_kjfelt[0].upper() != 'F': 
+            print( "QA-feil: Feil mappenavn, forventer F<feltnummer>_<år>_<mnd>_<dag>", mappe) 
+        try: 
+            feltnr = int( re.sub( "\D", "", meta_kjfelt )) 
+        except ValueError:
+            print( 'QA-feil: Klarte ikke finne feiltinformasjon for mappe', mappe) 
+        
+        if feltnr % 2 == 0:
+            meta_retning = 'MOT'
+            jsonfiler.sort( reverse=True)
+        else: 
+            meta_retning = 'MED'
+            jsonfiler.sort() 
+            
+        for eijsonfil in jsonfiler: 
+            
+            fname = os.path.join( mappe, eijsonfil) 
+            try: 
+                with open( fname) as f: 
+                    metadata = json.load( f) 
+            except OSError: 
+                print( "Kan ikke lese inn bildefil", fname) 
+                
+            else: 
+                
+            
+               # Legger vianova-xml'en sist
+                imageproperties = metadata.pop( 'exif_imageproperties' ) 
+                
+                metadata['temp_filnavn'] =  fname
+
+                
+                # Retning og feltkode
+                metadata['retning'] = meta_retning
+                metadata['filnavn_feltkode'] = meta_kjfelt
+              
+                
+                # Utleder riktig mappenavn 
+                metadata['mappenavn'] = utledMappenavn( mappe) 
+            
+                # Unik ID for hvert bilde, og felles ID for alle bilder i samme mappe
+                metadata['datafangstuuid'] = meta_datafangst_uuid
+                if not 'bildeuiid' in metadata.keys() or not metadata['bildeuiid']: 
+                    metadata['bildeuiid'] = str( uuid.uuid4() ) 
+                metadata['forrige_uuid'] = None
+                metadata['neste_uuid'] = None
+                
+                
+                # Legger til et par tagger for administrering av metadata
+                metadata['stedfestet'] = 'NEI'
+                metadata['indeksert_i_db'] = None
+
+                # Legger vianova-xml'en sist
+                metadata['exif_imageproperties' ] = imageproperties
+                
+                # Føyer på den korte listen
+                templiste.append(  metadata)            
+
+         # Lenkar sammen den lenkede listen 
+        for ii in range( 0, len(templiste)): 
+            
+            # Forrige element i listen
+            if ii > 0 and ii < len(templiste): 
+                templiste[ii]['forrige_uuid']    = templiste[ii-1]['bildeuiid']
+            
+            # Neste element     
+            if ii < len(templiste)-1: 
+                templiste[ii]['neste_uuid']    = templiste[ii+1]['bildeuiid']
+
+        # Skriver json-fil med metadata til fil
+        for jsonfil in templiste:
+
+            filnavn = jsonfil.pop( 'temp_filnavn' ) 
+                
+            with open( filnavn, 'w') as f: 
+                json.dump( jsonfil, f, indent=4, ensure_ascii=False) 
+
+ 
+def findfiles(which, where='.'):
+    '''
+    Returns list of filenames from `where` path matched by 'which'
+    shell pattern. Matching is case-insensitive.
+    
+    https://gist.github.com/techtonik/5694830
+    snippet is placed into public domain by
+    anatoly techtonik <techtonik@gmail.com>
+    http://stackoverflow.com/questions/8151300/ignore-case-in-glob-on-linux
+
+    EXAMPLES: 
+        findfiles('*.ogg')
+        findfiles( '*.jpg', where='denne_mappen/undermappe') 
+    '''
+
+    # TODO: recursive param with walk() filtering
+    rule = re.compile(fnmatch.translate(which), re.IGNORECASE)
+
+    return [name for name in os.listdir(where) if rule.match(name)]
+    
+    
 def formatvegref( fylke, kommune, vegkat, vegstat, vegnummer, hp, meter): 
     """
     Formatterer en vegreferanse-streng som kan brukes i kall til visveginfo
@@ -232,6 +349,6 @@ if __name__ == '__main__':
             print( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
         else: 
             print( 'Stedfester metadata i mappe', datadir ) 
-            # stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting )  
-            stedfest_bildemappe( datadir, overskrivStedfesting=overskrivStedfesting )  
+            sorter_mappe_per_meter( datadir ) 
+            stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting )  
     
