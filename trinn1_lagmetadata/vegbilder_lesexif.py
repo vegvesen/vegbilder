@@ -87,8 +87,6 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
     oss, utledet fra filnavnet. Til sist leses mappen på laveste nivå, der bildene ligger, sortert 
     etter filnavn, dvs etter økende (felt 1, med metrering) eller synkende (felt 2, mot metrering) 
     meterverdier.
-    
-    ViewDate - parameter brukes p.t. ikke til noe som helst. 
     """ 
     
     t0 = datetime.now()
@@ -136,7 +134,7 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
             
             else: 
 
-                metadata['temp_filnavn'] =  os.path.join( mappe, etbilde) 
+                bildefilnavn =  os.path.join( mappe, etbilde) 
                 
                 # Legger vianova-xml'en sist
                 imageproperties = metadata.pop( 'exif_imageproperties' ) 
@@ -149,49 +147,31 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
                 # Utleder riktig mappenavn 
                 metadata['mappenavn'] = utledMappenavn( mappe) 
             
-                # Unik ID for hvert bilde, og felles ID for alle bilder i samme mappe
-                metadata['datafangstuuid'] = meta_datafangst_uuid
+                # Unik ID for hvert bilde
                 metadata['bildeuiid'] = str( uuid.uuid4() )
-                metadata['forrige_uuid'] = None
-                metadata['neste_uuid'] = None
                 
-                # Legger vianova-xml'en sist
-                metadata['exif_imageproperties' ] = imageproperties
                 
                 # Legger til et par tagger for administrering av metadata
                 metadata['stedfestet'] = 'NEI'
                 metadata['indeksert_i_db'] = None
                 
-                # Føyer på den korte listen
-                templiste.append(  metadata)
+                # Legger vianova-xml'en sist
+                metadata['exif_imageproperties' ] = imageproperties
                 
-         # Lenkar sammen den lenkede listen 
-        for ii in range( 0, len(templiste)): 
-            
-            # Forrige element i listen
-            if ii > 0 and ii < len(templiste): 
-                templiste[ii]['forrige_uuid']    = templiste[ii-1]['bildeuiid']
-            
-            # Neste element     
-            if ii < len(templiste)-1: 
-                templiste[ii]['neste_uuid']    = templiste[ii+1]['bildeuiid']
         
-        # Skriver json-fil med metadata til fil
-        for bildefil in templiste:
         
-            filnavn = os.path.splitext( bildefil['temp_filnavn'])[0]  +  '.json' 
-            if (not os.path.isfile( filnavn)) or overskrivGammalJson:  
-                junk = bildefil.pop( 'temp_filnavn') 
-                if os.path.isfile( filnavn):
-                    countOverskrevet += 1
-                
-                with open( filnavn, 'w') as f: 
-                    json.dump( bildefil, f, indent=4, ensure_ascii=False) 
-                countNyeIndeksertebilder += 1
+                jsonfilnavn = os.path.splitext( bildefilnavn)[0]  +  '.json' 
+                if (not os.path.isfile( jsonfilnavn)) or overskrivGammalJson:  
+                    if os.path.isfile( jsonfilnavn):
+                        countOverskrevet += 1
+                    
+                    with open( jsonfilnavn, 'w') as f: 
+                        json.dump( metadata, f, indent=4, ensure_ascii=False) 
+                    countNyeIndeksertebilder += 1
 
-            else: 
-
-                countAlleredeIndeksert += 1
+                else: 
+                    countAlleredeIndeksert += 1
+    
     
     dt = datetime.now() - t0
     print( "laget metadata for", countNyeIndeksertebilder, "bilder på", dt.total_seconds(), 'sekunder') 
@@ -351,20 +331,8 @@ def lesexif( filnavn):
         XPTitle = labeled['XPTitle'].decode('utf16')
     
     viatekmeta['exif_xptitle'] = XPTitle 
-    
-                    
+                   
     return viatekmeta
-
-def formatvegref( fylke, kommune, vegkat, vegstat, vegnummer, hp, meter): 
-    """
-    Formatterer en vegreferanse-streng som kan brukes i kall til visveginfo
-    """
-    
-    vegref = str(fylke).rjust(2, '0') + str(kommune).rjust(2, '0') + vegkat.upper() + vegstat.upper() + \
-            str(vegnummer).rjust(5, '0') + str(hp).rjust(3, '0') + str(meter).rjust(5, '0') 
-    return vegref
-
-
 
 #% -------------------------------------------------------
 # 
@@ -466,7 +434,7 @@ if __name__ == '__main__':
 
     overskrivGammalJson = False
     datadir = None 
-    versjonsinfo = "Versjon 1.5 01.06.2019 kl 09:00"
+    versjonsinfo = "Versjon 2.0 03.06.2019 kl 15:22"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
