@@ -138,28 +138,14 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
                 
                 # Legger vianova-xml'en sist
                 imageproperties = metadata.pop( 'exif_imageproperties' ) 
-                
-                # Retning og feltkode
-                metadata['retning'] = meta_retning
-                metadata['filnavn_feltkode'] = meta_kjfelt
-              
-                
-                # Utleder riktig mappenavn 
-                metadata['mappenavn'] = utledMappenavn( mappe) 
-            
+                            
                 # Unik ID for hvert bilde
                 metadata['bildeuiid'] = str( uuid.uuid4() )
                 
                 
-                # Legger til et par tagger for administrering av metadata
-                metadata['stedfestet'] = 'NEI'
-                metadata['indeksert_i_db'] = None
-                
                 # Legger vianova-xml'en sist
                 metadata['exif_imageproperties' ] = imageproperties
-                
-        
-        
+ 
                 jsonfilnavn = os.path.splitext( bildefilnavn)[0]  +  '.json' 
                 if (not os.path.isfile( jsonfilnavn)) or overskrivGammalJson:  
                     if os.path.isfile( jsonfilnavn):
@@ -172,26 +158,11 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
                 else: 
                     countAlleredeIndeksert += 1
     
-    
     dt = datetime.now() - t0
     print( "laget metadata for", countNyeIndeksertebilder, "bilder på", dt.total_seconds(), 'sekunder') 
     print( "Beholdt", countAlleredeIndeksert, "metadata for bilder som allered var prosessert") 
     print( "Overskrev", countOverskrevet, "json-filer med eldre metadata") 
 
-
-def utledMappenavn( mappe ):
-    mapper = mappe.split('/') 
-    return '/'.join( mapper[-5:-1]) 
-
-
-# def utledMappenavn( vianovamappenavn, fylkenr, dato):
-
-    # mapper = vianovamappenavn.split('/') 
-    # datosplit = dato.split( '-') 
-    # fylkenr = str(fylkenr).zfill(2) 
-    # return 'ROTMAPPE-fylke' + fylkenr + '/undermappe_aar_' + datosplit[0] + '/' \
-            # + '/'.join( mapper[-3:] )
-    
     
 
 def findfiles(which, where='.'):
@@ -434,7 +405,7 @@ if __name__ == '__main__':
 
     overskrivGammalJson = False
     datadir = None 
-    versjonsinfo = "Versjon 2.0 03.06.2019 kl 15:22"
+    versjonsinfo = "Versjon 2.0 den 3. juni .2019 kl 15:31"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
