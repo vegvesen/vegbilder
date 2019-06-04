@@ -1,4 +1,8 @@
 { "info" : "JSON parametre for vegbilder_lesexif", 
     "datadir" : "../../testbilder_prosessert/orginal_stedfesting",
   "info2": "Kan også inneholde valgfri parameter overskrivStedfesting = true | false", 
-  "overskrivStedfesting" : true }
+  "overskrivStedfesting" : true, 
+  "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
+  "logname"      : "stedfesting_", 
+  "logdir"       : "loggfiler_stedfesting" 
+  }

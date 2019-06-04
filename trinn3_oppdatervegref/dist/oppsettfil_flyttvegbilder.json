@@ -1,4 +1,7 @@
 { "info" : "Oppsettfil for flyttvegbilder",
   "orginalmappe" : "../../testbilder_prosessert/", 
-  "nymappe"      : "../../testbilder_nystedfesting"
+  "nymappe"      : "../../testbilder_nystedfesting", 
+  "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
+  "logname"      : "nyvegreferanse_", 
+  "logdir"       : "log" 
   }

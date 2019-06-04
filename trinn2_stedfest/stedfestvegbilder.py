@@ -13,9 +13,11 @@ import json
 from datetime import datetime
 import sys
 import time
+import logging
 
 import requests
 import xmltodict # Må installeres, rett fram 
+import duallog 
 
 def utledMappenavn( mappe ):
     mapper = mappe.split('/') 
@@ -123,7 +125,7 @@ def visveginfo_vegreferanseoppslag( metadata):
         metadata['strekningsreferanse'] = metadata['exif_strekningreferanse']
             
     else: 
-        print( 'Ugyldig vegreferanse', vegref, 'for dato', params['ViewDate'] ) 
+        logging.warning( ' '.join( [ 'Ugyldig vegreferanse', vegref, 'for dato', params['ViewDate'] ] ) ) 
         geometry = None
         # metadata['visveginfoparams'] = params
         metadata['visveginfosuksess'] =  False 
@@ -155,10 +157,12 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                 
         if nummer == 10 or nummer == 100 or nummer % 500 == 0: 
             dt = datetime.now() - t0 
-            print( 'Stedfester bilde', nummer+1, 'av', len(jsonfiler), dt.total_seconds(), 'sekunder') 
+            logging.info( ' '.join( [ 'Stedfester bilde', str( nummer+1), 'av', 
+                                    str( len(jsonfiler)), str( dt.total_seconds()) , 'sekunder' ] ) )
  
     dt = datetime.now() - t0
-    print( 'Stedfestet', count, 'av', len(jsonfiler), 'vegbilder på', dt.total_seconds(), 'sekunder') 
+    logging.info( ' '.join( [ 'Stedfestet', str( count) , 'av', str( len(jsonfiler)), 
+                                'vegbilder på', str( dt.total_seconds()), 'sekunder' ] ) ) 
 
 
 def sorter_mappe_per_meter(datadir, overskrivStedfesting=False): 
@@ -168,7 +172,7 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
     folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if re.search( "fy[0-9]{1,2}.*hp.*m[0-9]{1,6}.json", file_, re.IGNORECASE)  )
 
     for mappe in folders: 
-        print( "Leter i mappe", mappe) 
+        logging.info( "Leter i mappe " +  mappe) 
 
         templiste = []
         meta_datafangst_uuid = str( uuid.uuid4() )
@@ -182,11 +186,11 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
         meta_kjfelt = feltmappebiter[0]
         
         if len( feltmappebiter) != 4 or meta_kjfelt[0].upper() != 'F': 
-            print( "QA-feil: Feil mappenavn, forventer F<feltnummer>_<år>_<mnd>_<dag>", mappe) 
+            logging.warning( "QA-feil: Feil mappenavn, forventer F<feltnummer>_<år>_<mnd>_<dag> " +  mappe) 
         try: 
             feltnr = int( re.sub( "\D", "", meta_kjfelt )) 
         except ValueError:
-            print( 'QA-feil: Klarte ikke finne feiltinformasjon for mappe', mappe) 
+            logging.warning( 'QA-feil: Klarte ikke finne feiltinformasjon for mappe ' + mappe) 
         
         if feltnr % 2 == 0:
             meta_retning = 'MOT'
@@ -202,12 +206,12 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
                 with open( fname) as f: 
                     metadata = json.load( f) 
             except OSError as myErr: 
-                print( "Kan ikke lese inn bildefil", fname, str(myErr)) 
+                logging.warning( ' '.join( [  "Kan ikke lese inn bildefil", fname, str(myErr) ] ) ) 
                 
             else: 
                 
             
-               # Legger vianova-xml'en sist
+               # Legger viatech-xml'en sist
                 imageproperties = metadata.pop( 'exif_imageproperties' ) 
                 
                 metadata['temp_filnavn'] =  fname
@@ -233,7 +237,7 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
                 metadata['stedfestet'] = 'NEI'
                 metadata['indeksert_i_db'] = None
 
-                # Legger vianova-xml'en sist
+                # Legger viatech-xml'en sist
                 metadata['exif_imageproperties' ] = imageproperties
                 
                 # Føyer på den korte listen
@@ -303,8 +307,11 @@ if __name__ == '__main__':
 
     datadir = None
     overskrivStedfesting = False
+    logdir = 'log' 
+    logname='stedfestvegbilder_' 
+
     
-    versjonsinfo = "Versjon 2.0 den 3. juni 2019 kl 15:31"
+    versjonsinfo = "Stedfest vegbilder Versjon 2.2 den 4. juni 2019 kl 15:00"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
@@ -329,29 +336,51 @@ if __name__ == '__main__':
             if 'datadir' in oppsett.keys(): 
                 datadir = oppsett['datadir']
                 
+            if 'logdir' in oppsett.keys():
+                logdir = oppsett['logdir']
+
+            if 'logname' in oppsett.keys():
+                logname = oppsett['logname']
+
+            duallog.duallogSetup( logdir=logdir, logname=logname) 
+            logging.info( versjonsinfo ) 
+            
+            
             if 'overskrivStedfesting' in oppsett.keys(): 
                 tmp_overskriv = oppsett['overskrivStedfesting']
                 if tmp_overskriv: 
-                    print( 'Beskjed om å overskrive gamle *.json metadata funnet i ', 
-                        sys.argv[1] ) 
+                    logging.info( 'Beskjed om å overskrive gamle *.json metadata funnet i ' + sys.argv[1] ) 
                 
                 if overskrivStedfesting and not tmp_overskriv: 
-                    print( 'Konflikt mellom parametre på kommandolinje', 
+                    logging.warning( ' '.join( [ 'Konflikt mellom parametre på kommandolinje', 
                         '(overskriv gamle json-metadata) og oppsettfil', sys.argv[1], 
-                        '(IKKE overskriv)') 
-                    print( 'Stoler mest på kommandolinje, overskriver gamle *.json metadata')
+                        '(IKKE overskriv)' ] ) ) 
+                    logging.warning( 'Stoler mest på kommandolinje, overskriver gamle *.json metadata')
                 else: 
                     overskrivStedfesting = tmp_overskriv                
         
+
+            
+            
         else: 
             datadir = sys.argv[1]
+            duallog.duallogSetup( logdir=logdir, logname=logname) 
+            logging.info( versjonsinfo ) 
+
             
         if not datadir: 
-            print( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
+            logging.error( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
         else: 
-            print( 'Stedfester metadata i mappe', datadir ) 
+
+            logging.info( 'Stedfester metadata i mappe ' + datadir )             
+
+            logging.info( 'Konfigurasjon: overskrivStedfesting=' + str( overskrivStedfesting ) ) 
+            if oppsett: 
+                logging.info( 'Henter oppsett fra fil' + sys.argv[1] ) 
+                
+                
             sorter_mappe_per_meter( datadir ) 
             stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting )  
+  
+            logging.info( "FERDIG " + versjonsinfo ) 
 
-    print( versjonsinfo ) 
- 

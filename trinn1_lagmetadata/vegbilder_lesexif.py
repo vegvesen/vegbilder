@@ -44,17 +44,20 @@ from datetime import datetime
 import fnmatch
 import sys
 import time
+import logging
 
 from PIL import Image # Må installeres, pakken heter PILLOW  
 from PIL.ExifTags import TAGS, GPSTAGS
 import requests # må installeres, rett fram
 import xmltodict # Må installeres, rett fram 
+import duallog
+
 
 # import ipdb
 
 def writeEXIFtoFile(imageFileName):
     """
-    Leser EXIF og skriver JSON-fil med metadata. Tilpasset firmaet "Signatur" sin kode
+    Leser EXIF og skriver JSON-fil med metadata. Tilpasset firmaet "Signatur ITS AS" sin kode
     
     Denne rutinen må kjøres FØR bildet er sladdet, fordi relevant EXIF-informasjon da slettes. 
     """ 
@@ -98,7 +101,7 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
     folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if os.path.splitext(file_)[1] == '.jpg')
     
     for mappe in folders: 
-        print("Leter i mappe", mappe) 
+        logging.info("Leter i mappe " + mappe) 
         templiste = []
 
         bildefiler = findfiles( 'fy*hp*m*.jpg', where=mappe) 
@@ -111,11 +114,11 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
         meta_kjfelt = feltmappebiter[0]
         
         if len( feltmappebiter) != 4 or meta_kjfelt[0].upper() != 'F': 
-            print( "QA-feil: Feil mappenavn, forventer F<feltnummer>_<år>_<mnd>_<dag>", mappe) 
+            logging.warning( "QA-feil: Feil mappenavn, forventer F<feltnummer>_<år>_<mnd>_<dag> " + mappe) 
         try: 
             feltnr = int( re.sub( "\D", "", meta_kjfelt )) 
         except ValueError:
-            print( 'QA-feil: Klarte ikke finne feiltinformasjon for mappe', mappe) 
+            logging.warning( 'QA-feil: Klarte ikke finne feiltinformasjon for mappe ' + mappe) 
         
         if feltnr % 2 == 0:
             meta_retning = 'MOT'
@@ -130,20 +133,21 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
             try: 
                 metadata = lesexif( os.path.join( mappe, etbilde )) 
             except (AttributeError, TypeError, UnicodeDecodeError, OSError) as myErr: 
-                print( 'QA-feil: Kan ikke lese EXIF-header fra bildefil', os.path.join( mappe, etbilde), str(myErr) ) 
+                logging.warning( ' '.join( [ 'QA-feil: Kan ikke lese EXIF-header fra bildefil', 
+                                            os.path.join( mappe, etbilde), str(myErr) ] ) ) 
             
             else: 
 
                 bildefilnavn =  os.path.join( mappe, etbilde) 
                 
-                # Legger vianova-xml'en sist
+                # Legger viatech-xml'en sist
                 imageproperties = metadata.pop( 'exif_imageproperties' ) 
                             
                 # Unik ID for hvert bilde
                 metadata['bildeuiid'] = str( uuid.uuid4() )
                 
                 
-                # Legger vianova-xml'en sist
+                # Legger viatech-xml'en sist
                 metadata['exif_imageproperties' ] = imageproperties
  
                 jsonfilnavn = os.path.splitext( bildefilnavn)[0]  +  '.json' 
@@ -159,9 +163,9 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
                     countAlleredeIndeksert += 1
     
     dt = datetime.now() - t0
-    print( "laget metadata for", countNyeIndeksertebilder, "bilder på", dt.total_seconds(), 'sekunder') 
-    print( "Beholdt", countAlleredeIndeksert, "metadata for bilder som allered var prosessert") 
-    print( "Overskrev", countOverskrevet, "json-filer med eldre metadata") 
+    logging.info( ' '.join( [ "laget metadata for", str( countNyeIndeksertebilder) , "bilder på", str( dt.total_seconds()) , 'sekunder' ] ) ) 
+    logging.info( ' '.join( [ "Beholdt", str( countAlleredeIndeksert) , "metadata for bilder som allered var prosessert" ] ) )
+    logging.info( ' '.join( [ "Overskrev", str( countOverskrevet) , "json-filer med eldre metadata" ] ) )
 
     
 
@@ -187,9 +191,9 @@ def findfiles(which, where='.'):
 
 
 
-def fiskFraVianovaXML(imagepropertiesxml): 
+def fiskFraviatechXML(imagepropertiesxml): 
     """
-    Leser relevante data fra vianova XML header. 
+    Leser relevante data fra viatech XML header. 
     """ 
     
     # with open( 'imageproperties.xml') as f: 
@@ -242,7 +246,8 @@ def fiskFraVianovaXML(imagepropertiesxml):
     lovlig_vegkat = ["E", "R", "F", "K", "P", "S" ] 
 
     if exif_vegstat not in lovlig_vegstatus or exif_vegkat not in lovlig_vegkat: 
-        print( 'VCRoad=', exif_veg, 'følger ikke KAT+STAT+vegnr syntaks:', mappenavn ) 
+        # logging.info( ' '.join( [ 'VCRoad=', exif_veg, 'følger ikke KAT+STAT+vegnr syntaks:', mappenavn ] ) ) 
+        print( 'VCRoad=', exif_veg, 'følger ikke KAT+STAT+vegnr syntaks:', mappenavn )
         
     
     retval =  { 
@@ -282,11 +287,11 @@ def lesexif( filnavn):
     # Fisker ut XML'en som er stappet inn som ikke-standard exif element
     xmldata = pyntxml( labeled) 
 
-    # Fisker ut mer data fra Vianova xml
-    viatekmeta = fiskFraVianovaXML( xmldata) 
+    # Fisker ut mer data fra viatech xml
+    viatekmeta = fiskFraviatechXML( xmldata) 
     
     ## Omsetter Exif GPSInfo => lat, lon desimalgrader, formatterer som EWKT
-    ## Overflødig - bruker (lat,lon,z) fra vianova xml 
+    ## Overflødig - bruker (lat,lon,z) fra viatech xml 
     # try: 
         # geotags = get_geotagging(exif)
     # except ValueError: 
@@ -296,7 +301,7 @@ def lesexif( filnavn):
         # (lat, lon) = get_coordinates( geotags) 
         # ewkt = 'srid=4326;POINT(' + str(lon) + ' ' + str(lat) + ')'    
 
-    # Bildetittel - typisk etelleranna med Vianova Systems 
+    # Bildetittel - typisk etelleranna med viatech Systems 
     XPTitle = ''
     if 'XPTitle' in labeled.keys(): 
         XPTitle = labeled['XPTitle'].decode('utf16')
@@ -344,7 +349,7 @@ def get_coordinates(geotags):
     
 def pyntxml( exif_labelled): 
     """
-    Fjerner litt rusk fra den XML'en som Vianova legger i Exif-header. Obfuskerer fører og bilnr
+    Fjerner litt rusk fra den XML'en som viatech legger i Exif-header. Obfuskerer fører og bilnr
     """
     
     try: 
@@ -405,7 +410,11 @@ if __name__ == '__main__':
 
     overskrivGammalJson = False
     datadir = None 
-    versjonsinfo = "Versjon 2.0 den 3. juni .2019 kl 15:31"
+    logdir = 'log' 
+    logname='lesexif_' 
+    
+    
+    versjonsinfo = "Versjon 2.1 den 4. juni .2019 kl 1600"
 
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
@@ -425,38 +434,53 @@ if __name__ == '__main__':
             print( "Beskjed om å overskrive gamle *.json-metadata funnet i argument", 
                 sys.argv[2] ) 
             
-            
+        
         if '.json' in sys.argv[1][-5:].lower(): 
             print( 'vegbilder_lesexif: Leser oppsettfil fra', sys.argv[1] ) 
             with open( sys.argv[1]) as f: 
                 oppsett = json.load( f) 
-                
+            
+            if 'logdir' in oppsett.keys():
+                logdir = oppsett['logdir']
+
+            if 'logname' in oppsett.keys():
+                logname = oppsett['logname']
+
+            duallog.duallogSetup( logdir=logdir, logname=logname) 
+            logging.info( versjonsinfo ) 
+            
+            logging.info( "Bruker oppsettfil " + sys.argv[1] ) 
+
+            
             if 'datadir' in oppsett.keys(): 
                 datadir = oppsett['datadir']
 
             if 'overskrivGammalJson' in oppsett.keys(): 
                 tmp_overskriv = oppsett['overskrivGammalJson']
                 if tmp_overskriv: 
-                    print( 'Beskjed om å overskrive gamle *.json metadata funnet i ', 
-                        sys.argv[1] ) 
+                    logging.info( ' '.join( [ 'Beskjed om å overskrive gamle *.json metadata funnet i ', 
+                        sys.argv[1] ] ) ) 
                 
                 if overskrivGammalJson and not tmp_overskriv: 
-                    print( 'Konflikt mellom parametre på kommandolinje', 
+                    logging.warning( ' '.join( [ 'Konflikt mellom parametre på kommandolinje', 
                         '(overskriv gamle json-metadata) og oppsettfil', sys.argv[1], 
-                        '(IKKE overskriv)') 
-                    print( 'Stoler mest på kommandolinje, overskriver gamle *.json metadata')
+                        '(IKKE overskriv)' ] ) )
+                    logging.warning( 'Stoler mest på kommandolinje, overskriver gamle *.json metadata')
                 else: 
                     overskrivGammalJson = tmp_overskriv
                 
         else: 
             datadir = sys.argv[1] 
+            duallog.duallogSetup( logdir=logdir, logname=logname) 
+            logging.info( versjonsinfo ) 
+            
             
         if not datadir: 
-            print( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
+            logging.error( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
         else: 
-            print( 'Lager metadata for vegbilder i mappe', datadir ) 
+            logging.info( 'Lager metadata for vegbilder i mappe ' + datadir ) 
             if overskrivGammalJson: 
-                print( 'Overskriver alle eldre metadata som måtte finnes fra før') 
+                logging.info( 'Overskriver alle eldre metadata som måtte finnes fra før') 
             indekserbildemappe( datadir, overskrivGammalJson=overskrivGammalJson) 
 
     print( versjonsinfo ) 

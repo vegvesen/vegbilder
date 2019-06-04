@@ -459,7 +459,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.0 den 4. Juni 2019 kl 12:00"
+    versjoninfo = "Flyttvegbilder Versjon 2.1 den 4. Juni 2019 kl 16:00"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
@@ -485,7 +485,7 @@ if __name__ == "__main__":
                 logdir = oppsett['logdir']
 
             if 'logname' in oppsett.keys():
-                logdir = oppsett['logname']
+                logname = oppsett['logname']
                 
         else: 
             gammeltdir = sys.argv[1]
