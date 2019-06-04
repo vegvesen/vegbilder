@@ -17,10 +17,13 @@ from copy import deepcopy
 from pathlib import Path
 from shutil import copyfile
 import sys
+import logging
 
 
 import requests
 import xmltodict
+
+import duallog
 
 def visveginfo_veglenkeoppslag( metadata): 
     """
@@ -80,7 +83,8 @@ def visveginfo_veglenkeoppslag( metadata):
 
     else: 
         
-        print( 'Ugyldig vegnett:', params, '\n\t', os.path.join( metadata['mappenavn'], metadata['exif_filnavn'] )) 
+        logging.info( ' '.join( [ 'Ugyldig vegnett:', str( params ), 
+                                os.path.join( metadata['mappenavn'], metadata['exif_filnavn'] ) ] ) ) 
         
         if metadata['stedfestet'].upper() == 'JA':
             metadata['stedfestet'] =  'historisk' 
@@ -191,12 +195,13 @@ def sjekkfelt( metadata, snuretning='Ikke snudd'):
             if etterlystFeltNr == muligFeltNr: 
                 nyFeltKode = felt 
                 if gmlFeltType != muligFeltType: 
-                    print( 'Mismatch felttype når vi snur retning', 
+                    logging.warning( ' '.join( [ 'Mismatch felttype når vi snur retning', 
                             metadata['exif_feltkode'], '=>', nyFeltKode, 'av mulige', 
-                            metadata['feltoversikt'], bildenavn )
+                            metadata['feltoversikt'], bildenavn ] ) )
                 
         if not nyFeltKode: 
-            print( "Klarte ikke snu feltretning", metadata['exif_feltkode'], 'til noe i', muligeFelt,  bildenavn ) 
+            logging.warning( ' '.join( [ "Klarte ikke snu feltretning", metadata['exif_feltkode'], 
+                                        'til noe i', muligeFelt,  bildenavn ] ) ) 
             nyFeltKode = metadata['feltoversikt']
         
         metadata['feltkode'] = nyFeltKode
@@ -295,7 +300,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     for strekning in tempnytt.keys():
         # Sjekker om strekningene skal snus på strekningen relativt til info i EXIF-headeren
         snuretning = sjekkretning( tempnytt[strekning] ) 
-        print( strekning, snuretning) 
+        logging.info( strekning + " " +  snuretning) 
         
         # Tar med oss info om retningen skal snus og komponerer nye streknings (mappe) og filnavn: 
         for fil in tempnytt[strekning]['filer']: 
@@ -310,7 +315,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             tempfilnavn.add( os.path.join( nyttdir, nystrekning, nyttfilnavn) )
             
             if not nystrekning in nytt.keys(): 
-                print( strekning, snuretning, '=>\n\t', nystrekning ) 
+                logging.info( " ".join( [ strekning, snuretning, '=>', nystrekning ] ) ) 
 
                 nytt[nystrekning] = { 'strekningsnavn' : nystrekning, 'filer' : [] }
 
@@ -318,9 +323,10 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             nytt[nystrekning]['filer'].append( meta2) 
             
     ferdigcount = 0  
+    count_manglerwebpfil = 0 
     ferdigfilnavn = set()
     for ferdigstrekning in nytt.keys(): 
-        print( 'Ny strekningdefinisjon', ferdigstrekning) 
+        logging.info( 'Ny strekningdefinisjon: ' + ferdigstrekning) 
         for eifil in nytt[ferdigstrekning]['filer']:
             ferdigcount += 1
         
@@ -339,13 +345,12 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             try: 
                 copyfile( gammelfil + '.jpg', skrivnyfil + '.jpg' ) 
             except FileNotFoundError: 
-                print( 'Fant ikke fil:', gammelfil+'.jpg') 
+                logging.error( 'Fant ikke JPG-fil:' + gammelfil+'.jpg') 
 
             try: 
                 copyfile( gammelfil + '.webp', skrivnyfil + '.webp' ) 
             except FileNotFoundError: 
-                pass
-                # print( 'Fant ikke fil', gammelfil+'.webp') 
+                count_manglerwebpfil += 1
             
             # Flytter exif-XML helt nederst i strukturen 
             exif_imageproperties = meta.pop( 'exif_imageproperties')
@@ -356,10 +361,13 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
 
             with open( skrivnyfil + '.json', 'w') as f: 
                 json.dump( meta, f, indent=4, ensure_ascii=False) 
-                
-    print("Antall filnavn på ulike steg:", len( tempfilnavn), len(tempfilnavn), len(ferdigfilnavn) )
+
+    if count_manglerwebpfil > 0: 
+        logging.warning( "Mangler " + str(count_manglerwebpfil) + " webp-filer"  ) 
+    logging.info( " ".join( [ "Antall filnavn på ulike steg:", str( len( tempfilnavn)), 
+                            str( len(tempfilnavn)), str( len(ferdigfilnavn)) ]) )
     dt = datetime.now() - t0
-    print( "Tidsforbruk", dt.total_seconds(), 'sekunder') 
+    logging.info( " ".join( [ "Tidsforbruk", str( dt.total_seconds()), 'sekunder' ])) 
     
                 
     # pdb.set_trace()
@@ -376,13 +384,12 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
     
 
     t0 = datetime.now()
-    print( "ny versjon")
-    print( t0) 
+    logging.info(str( t0) )
     # Finner alle mapper med bilder: 
     folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if os.path.splitext(file_)[1].lower() == '.jpg')
     
     for mappe in folders: 
-        print( "leter i mappe", mappe) 
+        logging.info( "leter i mappe " + mappe) 
         jsonfiler = findfiles( 'fy*hp*m*.json', where=mappe) 
         
         count = 0 # Debug, mindre datasett
@@ -412,9 +419,9 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
 
             oversikt[strekningsmappe]['filer'].append( metadata2) 
     
-    print( datetime.now())
+    logging.info( str( datetime.now()))
     dt = datetime.now() - t0
-    print( "Tidsforbruk stedfesting", dt.total_seconds(), 'sekunder')     
+    logging.info( " ".join( [ "Tidsforbruk stedfesting", str(dt.total_seconds()), 'sekunder' ] ))     
     return oversikt
             
         
@@ -445,12 +452,15 @@ if __name__ == "__main__":
 
     nyttdir = None
     gammeltdir = None
+    logdir = 'log' 
+    logname='flyttvegbilder_' 
 
     # flyttfiler(gammeltdir='vegbilder/testbilder_prosessert/orginal_stedfesting', 
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    print( "Versjon 1.1 27.05.2019") 
+    versjoninfo = "Flyttvegbilder Versjon 2.0 den 4. Juni 2019 kl 12:00"
+    print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
         print( 'flyttvegbilder.exe "../../testbilder_prosessert/", "../../testbilder_nystedfesting')
@@ -471,6 +481,12 @@ if __name__ == "__main__":
             if 'nymappe' in oppsett.keys():
                 nyttdir = oppsett['nymappe'] 
                 
+            if 'logdir' in oppsett.keys():
+                logdir = oppsett['logdir']
+
+            if 'logname' in oppsett.keys():
+                logdir = oppsett['logname']
+                
         else: 
             gammeltdir = sys.argv[1]
             
@@ -486,6 +502,8 @@ if __name__ == "__main__":
     if not gammeltdir or not nyttdir: 
         print( "STOPP - kan ikke prosessere uten at du angir mappenavn for der bildene finnes og dit oppdatert stedfesting kan skrives") 
     else: 
+        duallog.duallogSetup( logdir=logdir, logname=logname) 
+        logging.info( versjoninfo ) 
         flyttfiler( gammeltdir=gammeltdir, nyttdir=nyttdir) 
-        
+        logging.info( "FERDIG" + versjoninfo ) 
     
