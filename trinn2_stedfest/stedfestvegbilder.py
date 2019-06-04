@@ -201,8 +201,8 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
             try: 
                 with open( fname) as f: 
                     metadata = json.load( f) 
-            except OSError: 
-                print( "Kan ikke lese inn bildefil", fname) 
+            except OSError as myErr: 
+                print( "Kan ikke lese inn bildefil", fname, str(myErr)) 
                 
             else: 
                 

@@ -61,8 +61,8 @@ def writeEXIFtoFile(imageFileName):
     
     try: 
         metadata = lesexif( imageFileName) 
-    except (AttributeError, TypeError, UnicodeDecodeError, OSError):
-        raise OSError('lesexif routine failed for '+ imageFileName ) 
+    except (AttributeError, TypeError, UnicodeDecodeError, OSError) as myErr:
+        raise OSError('lesexif routine failed for '+ imageFileName + ' : ' + str( myErr) ) 
     else: 
     
         metadata['bildeuiid'] = str( uuid.uuid4() )
@@ -129,8 +129,8 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
             # Henter relevante data fra EXIF-header 
             try: 
                 metadata = lesexif( os.path.join( mappe, etbilde )) 
-            except (AttributeError, TypeError, UnicodeDecodeError, OSError): 
-                print( 'QA-feil: Kan ikke lese EXIF-header fra bildefil', os.path.join( mappe, etbilde) ) 
+            except (AttributeError, TypeError, UnicodeDecodeError, OSError) as myErr: 
+                print( 'QA-feil: Kan ikke lese EXIF-header fra bildefil', os.path.join( mappe, etbilde), str(myErr) ) 
             
             else: 
 
@@ -406,6 +406,7 @@ if __name__ == '__main__':
     overskrivGammalJson = False
     datadir = None 
     versjonsinfo = "Versjon 2.0 den 3. juni .2019 kl 15:31"
+
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
