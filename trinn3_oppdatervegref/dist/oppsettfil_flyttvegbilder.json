@@ -3,5 +3,6 @@
   "nymappe"      : "../../testbilder_nystedfesting", 
   "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
   "logname"      : "nyvegreferanse_", 
-  "logdir"       : "log" 
+  "logdir"       : "loggfiler_flyttvegbilder", 
+  "proxies"      :  { "http" : "proxy.vegvesen.no:8080", "https" : "proxy.vegvesen.no:8080"  } 
   }

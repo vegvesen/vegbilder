@@ -452,14 +452,15 @@ if __name__ == "__main__":
 
     nyttdir = None
     gammeltdir = None
-    logdir = 'log' 
+    logdir = 'loggfiler_flyttvegbilder' 
     logname='flyttvegbilder_' 
+    proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     # flyttfiler(gammeltdir='vegbilder/testbilder_prosessert/orginal_stedfesting', 
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.1 den 4. Juni 2019 kl 16:00"
+    versjoninfo = "Flyttvegbilder Versjon 2.2 den 5. Juni 2019 kl 11:04"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
@@ -487,6 +488,9 @@ if __name__ == "__main__":
             if 'logname' in oppsett.keys():
                 logname = oppsett['logname']
                 
+            if 'proxies' in oppsett.keys():
+                proxies = oppsett['proxies']            
+                
         else: 
             gammeltdir = sys.argv[1]
             
@@ -504,6 +508,10 @@ if __name__ == "__main__":
     else: 
         duallog.duallogSetup( logdir=logdir, logname=logname) 
         logging.info( versjoninfo ) 
+        if proxies: 
+            logging.info( 'Bruker proxy for http-kall: ' + str( proxies )  ) 
+        else: 
+            logging.info( 'Bruker IKKE proxy for http kall' )          
         flyttfiler( gammeltdir=gammeltdir, nyttdir=nyttdir) 
         logging.info( "FERDIG" + versjoninfo ) 
     
