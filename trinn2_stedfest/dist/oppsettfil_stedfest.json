@@ -4,5 +4,6 @@
   "overskrivStedfesting" : true, 
   "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
   "logname"      : "stedfesting_", 
-  "logdir"       : "loggfiler_stedfesting" 
+  "logdir"       : "loggfiler_stedfesting", 
+   "proxies"      :  { "http" : "proxy.vegvesen.no:8080", "https" : "proxy.vegvesen.no:8080"  }  
   }

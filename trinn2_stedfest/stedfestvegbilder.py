@@ -59,7 +59,7 @@ def recursive_findfiles(which, where='.'):
     return filnavn
 
 
-def visveginfo_vegreferanseoppslag( metadata): 
+def visveginfo_vegreferanseoppslag( metadata, proxies=None): 
     """
     Mottar et metadata-element, fisker ut det som trengs for å gjøre oppslag på vegreferanse,
     oppdaterer metadata-elementet og sender det tilbake. 
@@ -77,7 +77,10 @@ def visveginfo_vegreferanseoppslag( metadata):
     params = { 'roadReference' : vegref, 'ViewDate' : metadata['exif_dato'], 'topologyLevel' : 'Overview' } 
     
     url = 'http://visveginfo-static.opentns.org/RoadInfoService3d/GetRoadReferenceForReference' 
-    r = requests.get( url, params=params)
+    if proxies: 
+        r = requests.get( url, params=params, proxies=proxies)
+    else: 
+        r = requests.get( url, params=params ) 
     vvidata = xmltodict.parse( r.text )
     
     # Putter viatech XML sist... 
@@ -136,7 +139,7 @@ def visveginfo_vegreferanseoppslag( metadata):
 
     return metadata
 
-def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfesting=False ):
+def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfesting=False, proxies=None ):
     t0 = datetime.now()
     jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
     count = 0
@@ -151,7 +154,7 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                                     and isinstance( meta['stedfestet'], str) \
                                     and meta['stedfestet'].upper() != 'JA' )): 
             count += 1
-            meta = visveginfo_vegreferanseoppslag( meta) 
+            meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies) 
             with open( filnavn, 'w') as fw: 
                 json.dump( meta, fw, ensure_ascii=False, indent=4) 
                 
@@ -309,9 +312,10 @@ if __name__ == '__main__':
     overskrivStedfesting = False
     logdir = 'log' 
     logname='stedfestvegbilder_' 
+    proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 2.2 den 4. juni 2019 kl 15:00"
+    versjonsinfo = "Stedfest vegbilder Versjon 2.3 den 5. juni 2019 kl 10:17"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
@@ -345,6 +349,8 @@ if __name__ == '__main__':
             duallog.duallogSetup( logdir=logdir, logname=logname) 
             logging.info( versjonsinfo ) 
             
+            if 'proxies' in oppsett.keys():
+                proxies = oppsett['proxies']
             
             if 'overskrivStedfesting' in oppsett.keys(): 
                 tmp_overskriv = oppsett['overskrivStedfesting']
@@ -358,10 +364,7 @@ if __name__ == '__main__':
                     logging.warning( 'Stoler mest på kommandolinje, overskriver gamle *.json metadata')
                 else: 
                     overskrivStedfesting = tmp_overskriv                
-        
-
-            
-            
+                   
         else: 
             datadir = sys.argv[1]
             duallog.duallogSetup( logdir=logdir, logname=logname) 
@@ -378,9 +381,12 @@ if __name__ == '__main__':
             if oppsett: 
                 logging.info( 'Henter oppsett fra fil' + sys.argv[1] ) 
                 
-                
+            if proxies: 
+                logging.info( 'Bruker proxy for http-kall: ' + str( proxies )  ) 
+            else: 
+                logging.info( 'Bruker IKKE proxy for http kall' )  
             sorter_mappe_per_meter( datadir ) 
-            stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting )  
+            stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting, proxies=proxies )  
   
             logging.info( "FERDIG " + versjonsinfo ) 
 
