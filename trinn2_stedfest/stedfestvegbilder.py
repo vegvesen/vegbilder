@@ -59,7 +59,7 @@ def recursive_findfiles(which, where='.'):
     return filnavn
 
 
-def visveginfo_vegreferanseoppslag( metadata, proxies=None): 
+def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''): 
     """
     Mottar et metadata-element, fisker ut det som trengs for å gjøre oppslag på vegreferanse,
     oppdaterer metadata-elementet og sender det tilbake. 
@@ -81,15 +81,16 @@ def visveginfo_vegreferanseoppslag( metadata, proxies=None):
         r = requests.get( url, params=params, proxies=proxies)
     else: 
         r = requests.get( url, params=params ) 
-    vvidata = xmltodict.parse( r.text )
+    try: 
+        vvidata = xmltodict.parse( r.text )
+    except xml.parsers.expat.ExpatError as e: 
+        logging.warning( ' '.join( [ 'XML parsing av visveginfo-resultat feiler', filnavn, str(e) ] ) )
     
     # Putter viatech XML sist... 
     exif_imageproperties = metadata.pop( 'exif_imageproperties') 
 
     if 'ArrayOfRoadReference' in vvidata.keys() and 'RoadReference' in vvidata['ArrayOfRoadReference'].keys(): 
-        
-        
-        
+
         vvi = vvidata['ArrayOfRoadReference']['RoadReference']
 
         metadata['senterlinjeposisjon'] = 'srid=25833;POINT Z( ' + \
@@ -128,8 +129,7 @@ def visveginfo_vegreferanseoppslag( metadata, proxies=None):
         metadata['strekningsreferanse'] = metadata['exif_strekningreferanse']
             
     else: 
-        logging.warning( ' '.join( [ 'Ugyldig vegreferanse', vegref, 'for dato', params['ViewDate'] ] ) ) 
-        geometry = None
+        logging.warning( ' '.join( [ 'Ugyldig vegreferanse', vegref, 'for dato', params['ViewDate'], filnavn ] ) ) 
         # metadata['visveginfoparams'] = params
         metadata['visveginfosuksess'] =  False 
         metadata['stedfestet'] = 'Ugyldig'
@@ -154,7 +154,8 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                                     and isinstance( meta['stedfestet'], str) \
                                     and meta['stedfestet'].upper() != 'JA' )): 
             count += 1
-            meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies) 
+            meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
+              
             with open( filnavn, 'w') as fw: 
                 json.dump( meta, fw, ensure_ascii=False, indent=4) 
                 
@@ -315,7 +316,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 2.3 den 5. juni 2019 kl 10:17"
+    versjonsinfo = "Stedfest vegbilder Versjon 2.4 den 5. juni 2019 kl 20:48"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
