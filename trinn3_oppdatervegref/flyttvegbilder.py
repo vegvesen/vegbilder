@@ -480,7 +480,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.2 den 5. Juni 2019 kl 11:04"
+    versjoninfo = "Flyttvegbilder Versjon 2.3 den 6. Juni 2019 kl 22:40"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
