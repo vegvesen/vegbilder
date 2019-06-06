@@ -419,7 +419,7 @@ if __name__ == '__main__':
     logname='lesexif_' 
     
     
-    versjonsinfo = "Versjon 2.1 den 4. juni .2019 kl 1600"
+    versjonsinfo = "Versjon 3.0 den 6. juni 2019 kl 14:49"
 
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
