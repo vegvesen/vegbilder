@@ -76,7 +76,7 @@ def writeEXIFtoFile(imageFileName,pilImage=None,callersLogger=None):
 
     metadata['bildeuiid'] = str( uuid.uuid4() )
     jsonFileName = imageFileName.with_suffix('.json')
-    with jsonFileName.open('w') as fw:
+    with jsonFileName.open('w', encoding='utf-8') as fw:
         json.dump( metadata, fw, indent=4, ensure_ascii=False)
 
     return jsonFileName
@@ -160,7 +160,7 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
                     if os.path.isfile( jsonfilnavn):
                         countOverskrevet += 1
                     
-                    with open( jsonfilnavn, 'w') as f: 
+                    with open( jsonfilnavn, 'w', , encoding='utf-8') as f: 
                         json.dump( metadata, f, indent=4, ensure_ascii=False) 
                     countNyeIndeksertebilder += 1
 
