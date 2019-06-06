@@ -357,7 +357,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 2.4 den 5. juni 2019 kl 20:48"
+    versjonsinfo = "Stedfest vegbilder Versjon 2.5 den 6. juni 2019 kl 16:20"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
