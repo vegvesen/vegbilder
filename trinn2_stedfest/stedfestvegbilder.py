@@ -145,24 +145,46 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     count = 0
  
     for (nummer, filnavn) in enumerate(jsonfiler): 
-        with open( filnavn ) as f: 
-            meta = json.load(f)    
- 
-        # Stedfester kun dem som ikke er stedfestet fra før: 
-        if overskrivStedfesting or (not 'stedfestet' in meta.keys() or       \
-                                ('stedfestet' in meta.keys()                 \
-                                    and isinstance( meta['stedfestet'], str) \
-                                    and meta['stedfestet'].upper() != 'JA' )): 
-            count += 1
-            meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
-              
-            with open( filnavn, 'w') as fw: 
-                json.dump( meta, fw, ensure_ascii=False, indent=4) 
-                
-        if nummer == 10 or nummer == 100 or nummer % 500 == 0: 
-            dt = datetime.now() - t0 
-            logging.info( ' '.join( [ 'Stedfester bilde', str( nummer+1), 'av', 
-                                    str( len(jsonfiler)), str( dt.total_seconds()) , 'sekunder' ] ) )
+        meta = None
+        try: 
+            with open( filnavn ) as f: 
+                meta = json.load(f)    
+     
+            
+        except UnicodeDecodeError as myErr: 
+            logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) ) 
+        
+            try: 
+                with open( fname, encoding='latin-1') as f: 
+                    text = f.read()
+                    textUtf8 = text.encode('utf-8') 
+                    meta = json.loads( textUtf8) 
+            except UnicodeDecodeError as myErr2:
+                logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
+                meta = None
+                      
+        except OSError as myErr: 
+            logging.warning( ' '.join( [  "Kan ikke lese inn JSON-fil", filnavn, str(myErr) ] ) ) 
+            meta = None
+
+        if meta: 
+            # Stedfester kun dem som ikke er stedfestet fra før: 
+            if overskrivStedfesting or (not 'stedfestet' in meta.keys() or       \
+                                    ('stedfestet' in meta.keys()                 \
+                                        and isinstance( meta['stedfestet'], str) \
+                                        and meta['stedfestet'].upper() != 'JA' )): 
+                count += 1
+                meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
+                  
+                with open( filnavn, 'w', encoding='utf-8') as fw: 
+                    json.dump( meta, fw, ensure_ascii=False, indent=4) 
+                    
+            if nummer == 10 or nummer == 100 or nummer % 500 == 0: 
+                dt = datetime.now() - t0 
+                logging.info( ' '.join( [ 'Stedfester bilde', str( nummer+1), 'av', 
+                                        str( len(jsonfiler)), str( dt.total_seconds()) , 'sekunder' ] ) )
+
+
  
     dt = datetime.now() - t0
     logging.info( ' '.join( [ 'Stedfestet', str( count) , 'av', str( len(jsonfiler)), 
@@ -206,14 +228,30 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
         for eijsonfil in jsonfiler: 
             
             fname = os.path.join( mappe, eijsonfil) 
+            lest_OK = False 
             try: 
                 with open( fname) as f: 
                     metadata = json.load( f) 
+            except UnicodeDecodeError as myErr: 
+                logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) )  
+                
+                try: 
+                    with open( fname, encoding='latin-1') as f: 
+                        text = f.read()
+                    textUtf8 = text.encode('utf-8') 
+                    metadata = json.loads( textUtf8) 
+                except UnicodeDecodeError as myErr2:
+                    logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
+                else: 
+                    lest_OK = True
+                
+                
             except OSError as myErr: 
-                logging.warning( ' '.join( [  "Kan ikke lese inn bildefil", fname, str(myErr) ] ) ) 
-                
+                logging.warning( ' '.join( [  "Kan ikke lese inn JSON-fil", fname, str(myErr) ] ) ) 
             else: 
-                
+                lest_OK = True
+            
+            if lest_OK: 
             
                # Legger viatech-xml'en sist
                 imageproperties = metadata.pop( 'exif_imageproperties' ) 
@@ -245,7 +283,10 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
                 metadata['exif_imageproperties' ] = imageproperties
                 
                 # Føyer på den korte listen
-                templiste.append(  metadata)            
+                templiste.append(  metadata) 
+
+            else: 
+                logging.warning( 'Måtte hoppe over ' + fname) 
 
          # Lenkar sammen den lenkede listen 
         for ii in range( 0, len(templiste)): 
@@ -263,7 +304,7 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
 
             filnavn = jsonfil.pop( 'temp_filnavn' ) 
                 
-            with open( filnavn, 'w') as f: 
+            with open( filnavn, 'w', encoding='utf-8') as f: 
                 json.dump( jsonfil, f, indent=4, ensure_ascii=False) 
 
  
