@@ -160,7 +160,7 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
                     if os.path.isfile( jsonfilnavn):
                         countOverskrevet += 1
                     
-                    with open( jsonfilnavn, 'w', , encoding='utf-8') as f: 
+                    with open( jsonfilnavn, 'w', encoding='utf-8') as f: 
                         json.dump( metadata, f, indent=4, ensure_ascii=False) 
                     countNyeIndeksertebilder += 1
 

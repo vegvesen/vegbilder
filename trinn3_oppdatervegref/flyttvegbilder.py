@@ -359,7 +359,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             # Fjerner flagget 
             junk = meta.pop( 'ny_visveginfosuksess' )
 
-            with open( skrivnyfil + '.json', 'w') as f: 
+            with open( skrivnyfil + '.json', 'w', encoding='utf-8') as f: 
                 json.dump( meta, f, indent=4, ensure_ascii=False) 
 
     if count_manglerwebpfil > 0: 
@@ -391,33 +391,53 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
     for mappe in folders: 
         logging.info( "leter i mappe " + mappe) 
         jsonfiler = findfiles( 'fy*hp*m*.json', where=mappe) 
-        
+        metadata = None
         count = 0 # Debug, mindre datasett
         for bilde in jsonfiler: 
-            with open( os.path.join( mappe, bilde) ) as f:
-                metadata = json.load( f) 
-                
-            feltmappe = metadata['exif_mappenavn'].split('/')[-1] 
-            strekningsmappe = os.path.join( metadata['mappenavn'], feltmappe) 
-            
-            # Legger til strekning hvis den ikke finnes i oversikt
-            if strekningsmappe not in oversikt.keys(): 
-                oversikt[strekningsmappe] = { 'strekningsnavn' : strekningsmappe, 
-                                                'filer' : [] }
-                count = 0 # Debug, mindre datasett 
-                                                
-            metadata['temp_gammelfilnavn'] = os.path.join( mappe, 
-                                                os.path.splitext( bilde)[0] )
-                                                
-                                                
-            count += 1      # Debug, mindre datasett
-            if count <= 10: # Debug, mindre datasett
-                pass
-            
-            # Oppdaterer vegreferanseverdier:
-            metadata2 = deepcopy( visveginfo_veglenkeoppslag( metadata) ) 
+            fname = os.path.join( mappe, bilde)
+            try:
+                with open( fname ) as f:
+                    metadata = json.load( f) 
 
-            oversikt[strekningsmappe]['filer'].append( metadata2) 
+            except UnicodeDecodeError as myErr: 
+                logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) )  
+                
+                try: 
+                    with open( fname, encoding='latin-1') as f: 
+                        text = f.read()
+                    textUtf8 = text.encode('utf-8') 
+                    metadata = json.loads( textUtf8) 
+                except UnicodeDecodeError as myErr2:
+                    logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
+
+            except OSError as myErr: 
+                logging.warning( ' '.join( [  "Kan ikke lese inn JSON-fil", fname, str(myErr) ] ) ) 
+                
+            if metadata: 
+                
+                feltmappe = metadata['exif_mappenavn'].split('/')[-1] 
+                strekningsmappe = os.path.join( metadata['mappenavn'], feltmappe) 
+                
+                # Legger til strekning hvis den ikke finnes i oversikt
+                if strekningsmappe not in oversikt.keys(): 
+                    oversikt[strekningsmappe] = { 'strekningsnavn' : strekningsmappe, 
+                                                    'filer' : [] }
+                    count = 0 # Debug, mindre datasett 
+                                                    
+                metadata['temp_gammelfilnavn'] = os.path.join( mappe, 
+                                                    os.path.splitext( bilde)[0] )
+                                                    
+                count += 1      # Debug, mindre datasett
+                if count <= 10: # Debug, mindre datasett
+                    pass
+                
+                # Oppdaterer vegreferanseverdier:
+                metadata2 = deepcopy( visveginfo_veglenkeoppslag( metadata) ) 
+
+                oversikt[strekningsmappe]['filer'].append( metadata2) 
+                
+            else: 
+                logging.warning( 'Måtte gi opp lesing av fil ' + fname ) 
     
     logging.info( str( datetime.now()))
     dt = datetime.now() - t0
@@ -460,7 +480,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.2 den 5. Juni 2019 kl 11:04"
+    versjoninfo = "Flyttvegbilder Versjon 2.3 den 6. Juni 2019 kl 22:40"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
