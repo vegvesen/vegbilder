@@ -131,7 +131,7 @@ def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''):
     else: 
         logging.warning( ' '.join( [ 'Ugyldig vegreferanse', vegref, 'for dato', params['ViewDate'], filnavn ] ) ) 
         # metadata['visveginfoparams'] = params
-        metadata['visveginfosuksess'] =  False 
+        # metadata['visveginfosuksess'] =  False 
         metadata['stedfestet'] = 'Ugyldig'
        
     metadata['stedfestingdato'] = datetime.today().strftime('%Y-%m-%d')
@@ -143,6 +143,7 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     t0 = datetime.now()
     jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
     count = 0
+    count_suksess = 0 
  
     for (nummer, filnavn) in enumerate(jsonfiler): 
         meta = None
@@ -175,6 +176,9 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                                         and meta['stedfestet'].upper() != 'JA' )): 
                 count += 1
                 meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
+                
+                if meta['stedfestet'] == 'JA' : 
+                    count_suksess += 1
                   
                 with open( filnavn, 'w', encoding='utf-8') as fw: 
                     json.dump( meta, fw, ensure_ascii=False, indent=4) 
@@ -187,9 +191,16 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
 
  
     dt = datetime.now() - t0
-    logging.info( ' '.join( [ 'Stedfestet', str( count) , 'av', str( len(jsonfiler)), 
+    logging.info( ' '.join( [ 'Prøvde å stedfeste', str( count) , 'av', str( len(jsonfiler)), 
                                 'vegbilder på', str( dt.total_seconds()), 'sekunder' ] ) ) 
+                                
+    diff = len(jsonfiler) - count
+    if diff > 0: 
+        logging.info( 'Hoppet over ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
 
+    diff = count - count_suksess
+    if diff > 0: 
+        logging.warning( 'Stedfesting FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
 
 def sorter_mappe_per_meter(datadir, overskrivStedfesting=False): 
     # Finner alle mapper med json-filer, sorterer bildene med forrige-neste logikk
@@ -357,7 +368,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 2.5 den 6. juni 2019 kl 16:20"
+    versjonsinfo = "Stedfest vegbilder Versjon 2.6 den 7. juni 2019 kl 14:53"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
