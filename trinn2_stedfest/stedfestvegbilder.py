@@ -83,10 +83,13 @@ def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''):
         r = requests.get( url, params=params, proxies=proxies)
     else: 
         r = requests.get( url, params=params ) 
+    tekstrespons = r.text
     try: 
-        vvidata = xmltodict.parse( r.text )
+        vvidata = xmltodict.parse( tekstrespons )
     except ExpatError as e: 
-        logging.warning( ' '.join( [ 'XML parsing av visveginfo-resultat feiler', filnavn, str(e) ] ) )
+        logging.warning( ' '.join( [ 'XML parsing av visveginfo-resultat feiler', 
+                        filnavn, str(e), tekstrespons ] ) )
+
     
     # Putter viatech XML sist... 
     exif_imageproperties = metadata.pop( 'exif_imageproperties') 
@@ -380,7 +383,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 2.8 den 8. juni 2019 kl 0900"
+    versjonsinfo = "Stedfest vegbilder Versjon 2.9 den 8. juni 2019 kl 0800"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 

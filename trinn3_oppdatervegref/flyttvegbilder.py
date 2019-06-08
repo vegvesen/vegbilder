@@ -18,6 +18,8 @@ from pathlib import Path
 from shutil import copyfile
 import sys
 import logging
+from xml.parsers.expat import ExpatError
+
 
 
 import requests
@@ -25,7 +27,7 @@ import xmltodict
 
 import duallog
 
-def visveginfo_veglenkeoppslag( metadata): 
+def visveginfo_veglenkeoppslag( metadata, filnavn=''): 
     """
     Mottar et metadata-element, fisker ut det som trengs for å gjøre oppslag på veglenkeID og posisjon,
     henter oppdatert vegreferanse, føyer det til metadata-elementet og sender tilbake. 
@@ -45,12 +47,14 @@ def visveginfo_veglenkeoppslag( metadata):
         if len( tekstrespons) > 0: 
             try: 
                 vvidata = xmltodict.parse( tekstrespons )
-            except ExpatError:
+            except ExpatError as myErr:
                 params['info'] = 'Problemer med stedfesting' 
                 svar = re.findall( "<p>(.*?)</p>", tekstrespons )
                 vvidata = { 'Annen type' : 'feil' } 
                 if len(svar) > 0: 
                     params['info2'] = re.findall( "<p>(.*?)</p>", text)
+                logging.warning( ' '.join([ 'Problemer med stedfesting', 
+                    filnavn, str(myErr), tekstrespons ] ) ) 
                 
         else: 
             params['info'] = 'Stedfesting ikke lenger gyldig vegnett!' 
@@ -335,7 +339,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             gammelfil = meta.pop( 'temp_gammelfilnavn' )
             skrivefil = meta['filnavn'] 
             skrivnyfil = os.path.join( nyttdir, ferdigstrekning, skrivefil) 
-            # print( 'flytter filer', gammelfil, ' => ', skrivnyfil) 
+            logging.debug( ' '.join( ['flytter filer', gammelfil, ' => ', skrivnyfil ]) ) 
             ferdigfilnavn.add( skrivnyfil)    
             
             nymappenavn = os.path.join( nyttdir, ferdigstrekning)
@@ -381,7 +385,7 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
     """
 
     oversikt = { } 
-    
+    count_fatalt = 0 
 
     t0 = datetime.now()
     logging.info(str( t0) )
@@ -432,13 +436,20 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
                     pass
                 
                 # Oppdaterer vegreferanseverdier:
-                metadata2 = deepcopy( visveginfo_veglenkeoppslag( metadata) ) 
-
-                oversikt[strekningsmappe]['filer'].append( metadata2) 
+                try: 
+                    metadata2 = deepcopy( visveginfo_veglenkeoppslag( metadata, filnavn=fname) ) 
+                except Exception:
+                    count_fatalt += 1 
+                    logging.error( 'Fatal feil i visveginfo_veglenkeoppslag for fil' + fname)
+                    logging.exception('Stack trace for fatal feil' )
+                else: 
+                    oversikt[strekningsmappe]['filer'].append( metadata2) 
                 
             else: 
                 logging.warning( 'Måtte gi opp lesing av fil ' + fname ) 
-    
+
+    if count_fatalt > 0:
+        logging.error( 'Faltal feil for ' + str(count_fatalt) + 'filer' ) 
     logging.info( str( datetime.now()))
     dt = datetime.now() - t0
     logging.info( " ".join( [ "Tidsforbruk stedfesting", str(dt.total_seconds()), 'sekunder' ] ))     
@@ -480,7 +491,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.3 den 6. Juni 2019 kl 22:40"
+    versjoninfo = "Flyttvegbilder Versjon 2.4 den 8. Juni 2019 kl 0800"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
