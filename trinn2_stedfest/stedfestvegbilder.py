@@ -175,7 +175,11 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                                         and isinstance( meta['stedfestet'], str) \
                                         and meta['stedfestet'].upper() != 'JA' )): 
                 count += 1
-                meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
+                try: 
+                    meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
+                except Exception:
+                    logging.error( "Fatal feil i visveginfo_referanseoppslag for fil: " + filnavn )
+                    logging.exception("Stack trace for fatal feil:")
                 
                 if meta['stedfestet'] == 'JA' : 
                     count_suksess += 1
@@ -368,7 +372,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 2.7 den 7. juni 2019 kl 2324"
+    versjonsinfo = "Stedfest vegbilder Versjon 2.8 den 8. juni 2019 kl 0900"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
