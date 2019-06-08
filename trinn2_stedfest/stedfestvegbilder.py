@@ -14,6 +14,8 @@ from datetime import datetime
 import sys
 import time
 import logging
+from xml.parsers.expat import ExpatError
+
 
 import requests
 import xmltodict # Må installeres, rett fram 
@@ -144,6 +146,7 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
     count = 0
     count_suksess = 0 
+    count_fatalt = 0 
  
     for (nummer, filnavn) in enumerate(jsonfiler): 
         meta = None
@@ -178,14 +181,16 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                 try: 
                     meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
                 except Exception:
+                    count_fatalt += 1
                     logging.error( "Fatal feil i visveginfo_referanseoppslag for fil: " + filnavn )
                     logging.exception("Stack trace for fatal feil:")
+                else: 
                 
-                if meta['stedfestet'] == 'JA' : 
-                    count_suksess += 1
-                  
-                with open( filnavn, 'w', encoding='utf-8') as fw: 
-                    json.dump( meta, fw, ensure_ascii=False, indent=4) 
+                    if meta['stedfestet'] == 'JA' : 
+                        count_suksess += 1
+                      
+                    with open( filnavn, 'w', encoding='utf-8') as fw: 
+                        json.dump( meta, fw, ensure_ascii=False, indent=4) 
                     
             if nummer == 10 or nummer == 100 or nummer % 500 == 0: 
                 dt = datetime.now() - t0 
@@ -205,6 +210,9 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     diff = count - count_suksess
     if diff > 0: 
         logging.warning( 'Stedfesting FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
+        
+    if count_fatalt > 0: 
+        logging.error( 'Stedfesting FEILET med ukjent feilsituasjon for ' + str( count_fatalt) + ' vegbilder' ) 
 
 def sorter_mappe_per_meter(datadir, overskrivStedfesting=False): 
     # Finner alle mapper med json-filer, sorterer bildene med forrige-neste logikk
