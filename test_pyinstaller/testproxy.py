@@ -13,15 +13,15 @@ def hoved( proxies, lenker=[ { "url" : "http://example.com", "params" : "" } ]  
 
     for lenke in lenker: 
         print( "Henter",  lenke["url"], lenke['params'] ) 
-        print( '\tUten proxy:') 
-        r = requests.get( lenke['url'], params=lenke['params'] ) 
-        if r.ok: 
-            print( '\t\tSUKSESS') 
-        else: 
-            print( '\t\t??? status kode:', r.status_code ) 
+        # print( '\tUten proxy:') 
+        # r = requests.get( lenke['url'], params=lenke['params'] ) 
+        # if r.ok: 
+            # print( '\t\tSUKSESS') 
+        # else: 
+            # print( '\t\t??? status kode:', r.status_code ) 
         
         
-        print( '\tMed proxy' )
+        # print( '\tMed proxy' )
         r = requests.get( lenke['url'], params=lenke['params'], proxies=proxies ) 
         if r.ok: 
             print( '\t\tSUKSESS') 
