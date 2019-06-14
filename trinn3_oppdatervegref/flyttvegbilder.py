@@ -1,7 +1,7 @@
 """
 Oppdatering av vegreferanse-verdier for vegbilder
 
-Flytter alle vegbilder (*.jpg) med tilhørende metadata (*.webp, *.json) til ny 
+Kopierer alle vegbilder (*.jpg) med tilhørende metadata (*.webp, *.json) til ny 
 katalog. Fil og mappenavn blir oppdatert med nye vegreferanseverdier (hvis nødvendig). 
 
 
@@ -255,26 +255,49 @@ def lag_strekningsnavn( metadata):
             felt = 'F' + str( metadata['feltkode'] )
         else: 
             felt = 'F' + str( metadata['exif_feltkode'] ) 
-        dato =  '_'.join( metadata['exif_dato'].split('-')[0:3] ) 
-        
+        dato =  '_'.join( metadata['exif_dato'].split('-')[0:3] )   
         
         nystrekning = os.path.join( nystrekning, '_'.join( [felt, dato] ) )
         nyttfilnavn = '_'.join( [   'Fy' + vegnavn, hptekst, felt, 'm' + str( round( metadata['meter'] )) ] )
 
+        # pdb.set_trace()
+
     else: 
         # Returnerer det gamle navnet på streking og filnavn
         nyttfilnavn = re.sub( '.jpg', '', metadata['exif_filnavn'] ) 
-        nystrekning = '/'.join( metadata['temp_gammelfilnavn'].split('/')[-6:-1] )
+        tmpmapper = mypathsplit( metadata['temp_gammelfilnavn'], 6)
+        nystrekning = '/'.join( tmpmapper[-6:-1] ) 
+        
+        # nystrekning = '/'.join( metadata['temp_gammelfilnavn'].split('/')[-6:-1] )
         nystrekning = re.sub( '-', '_', nystrekning) 
         
     return (nystrekning, nyttfilnavn) 
     
+def mypathsplit( filnavn, antallbiter): 
+    """
+    Deler opp et filnavn (mappenavn) i antallbiter komponenter, regnet bakfra
+
+    returnerer liste med [rot, bit-2, bit-1, bakerst] for antallbiter=4
+    """
+    
+    biter = []
+    for i in range(antallbiter) : 
+        (rot, hale) = os.path.split( filnavn ) 
+        biter.append( hale) 
+        filnavn = rot
+        
+    biter.append( rot) 
+    return list( reversed( biter) ) 
+    
 def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm',  nyttdir='../bilder/testflytting/test1_Ev134', proxies=''): 
     
     """
-    Flytter bilder (*.jpg) og metadata (*.webp, *.json) over til mappe- og filnavn som er riktig etter 
+    Kopierer bilder (*.jpg) og metadata (*.webp, *.json) over til mappe- og filnavn som er riktig etter 
     gjeldende vegreferanse. 
     """ 
+ 
+    logging.info( "Kopierer bilder fra: " + gammeltdir ) 
+    logging.info( "                til: " + nyttdir ) 
     
     gammelt = lesfiler_nystedfesting(datadir=gammeltdir, proxies=proxies) 
     
@@ -302,6 +325,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     
     tempcount = 0
     tempfilnavn = set()
+    # pdb.set_trace()
     for strekning in tempnytt.keys():
         # Sjekker om strekningene skal snus på strekningen relativt til info i EXIF-headeren
         snuretning = sjekkretning( tempnytt[strekning] ) 
@@ -321,7 +345,11 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             
             if not nystrekning in nytt.keys(): 
             
-                gmltStrNavn = '/'.join( meta['temp_gammelfilnavn'].split('/')[-6:-1] ) 
+                # gmltStrNavn = '/'.join( meta['temp_gammelfilnavn'].split('/')[-6:-1] ) 
+                gmlnavn = mypathsplit( meta['temp_gammelfilnavn'], 6) 
+                gmltStrNavn = '/'.join( gmlnavn[-6:-1] ) 
+                # pdb.set_trace()
+                
                 snuindikator = snuretning
                 if snuretning == 'snudd': 
                     snuindikator = snuretning.upper()
@@ -348,8 +376,8 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
         for eifil in nytt[ferdigstrekning]['filer']:
             ferdigcount += 1
         
-            if ferdigcount in (1, 5, 10, 50, 100, 500) or ferdigcount % 1000 == 0: 
-                logging.info( ' '.join( [ 'Flytter fil ', str( ferdigcount ), 'av', str( tempcount), 
+            if ferdigcount in (1, 5, 10, 50, 100, 250, 500) or ferdigcount % 1000 == 0: 
+                logging.info( ' '.join( [ 'Kopierer fil ', str( ferdigcount ), 'av', str( tempcount), 
                                             'mappe', str( mappeCount), 'av', antallMapper ] ) ) 
         
             meta = deepcopy( eifil) 
@@ -357,7 +385,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             gammelfil = meta.pop( 'temp_gammelfilnavn' )
             skrivefil = meta['filnavn'] 
             skrivnyfil = os.path.join( nyttdir, ferdigstrekning, skrivefil) 
-            logging.debug( ' '.join( ['ENDRINGSINFO flytter filer', gammelfil, ' => ', skrivnyfil ]) ) 
+            logging.debug( ' '.join( ['ENDRINGSINFO Kopierer filer', gammelfil, ' => ', skrivnyfil ]) ) 
             ferdigfilnavn.add( skrivnyfil)    
                         
             nymappenavn = os.path.join( nyttdir, ferdigstrekning)
@@ -511,7 +539,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.6 den 14. Juni 2019 kl 1630"
+    versjoninfo = "Flyttvegbilder Versjon 2.7 den 14. Juni 2019 kl 2200"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
