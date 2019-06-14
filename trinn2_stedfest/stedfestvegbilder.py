@@ -14,6 +14,8 @@ from datetime import datetime
 import sys
 import time
 import logging
+from xml.parsers.expat import ExpatError
+
 
 import requests
 import xmltodict # Må installeres, rett fram 
@@ -81,10 +83,13 @@ def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''):
         r = requests.get( url, params=params, proxies=proxies)
     else: 
         r = requests.get( url, params=params ) 
+    tekstrespons = r.text
     try: 
-        vvidata = xmltodict.parse( r.text )
-    except xml.parsers.expat.ExpatError as e: 
-        logging.warning( ' '.join( [ 'XML parsing av visveginfo-resultat feiler', filnavn, str(e) ] ) )
+        vvidata = xmltodict.parse( tekstrespons )
+    except ExpatError as e: 
+        logging.warning( ' '.join( [ 'XML parsing av visveginfo-resultat feiler', 
+                        filnavn, str(e), tekstrespons ] ) )
+
     
     # Putter viatech XML sist... 
     exif_imageproperties = metadata.pop( 'exif_imageproperties') 
@@ -144,6 +149,7 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
     count = 0
     count_suksess = 0 
+    count_fatalt = 0 
  
     for (nummer, filnavn) in enumerate(jsonfiler): 
         meta = None
@@ -175,13 +181,19 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                                         and isinstance( meta['stedfestet'], str) \
                                         and meta['stedfestet'].upper() != 'JA' )): 
                 count += 1
-                meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
+                try: 
+                    meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
+                except Exception:
+                    count_fatalt += 1
+                    logging.error( "Fatal feil i visveginfo_referanseoppslag for fil: " + filnavn )
+                    logging.exception("Stack trace for fatal feil:")
+                else: 
                 
-                if meta['stedfestet'] == 'JA' : 
-                    count_suksess += 1
-                  
-                with open( filnavn, 'w', encoding='utf-8') as fw: 
-                    json.dump( meta, fw, ensure_ascii=False, indent=4) 
+                    if meta['stedfestet'] == 'JA' : 
+                        count_suksess += 1
+                      
+                    with open( filnavn, 'w', encoding='utf-8') as fw: 
+                        json.dump( meta, fw, ensure_ascii=False, indent=4) 
                     
             if nummer == 10 or nummer == 100 or nummer % 500 == 0: 
                 dt = datetime.now() - t0 
@@ -201,6 +213,9 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     diff = count - count_suksess
     if diff > 0: 
         logging.warning( 'Stedfesting FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
+        
+    if count_fatalt > 0: 
+        logging.error( 'Stedfesting FEILET med ukjent feilsituasjon for ' + str( count_fatalt) + ' vegbilder' ) 
 
 def sorter_mappe_per_meter(datadir, overskrivStedfesting=False): 
     # Finner alle mapper med json-filer, sorterer bildene med forrige-neste logikk
@@ -368,7 +383,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 2.6 den 7. juni 2019 kl 14:53"
+    versjonsinfo = "Stedfest vegbilder Versjon 2.9 den 8. juni 2019 kl 0800"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
