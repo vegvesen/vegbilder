@@ -41,6 +41,7 @@ def visveginfo_veglenkeoppslag( metadata):
         
         url = 'http://visveginfo-static.opentns.org/RoadInfoService/GetRoadReferenceForNVDBReference' 
         r = requests.get( url, params=params)
+        logging.debug( r.url) 
         tekstrespons = r.text
         if len( tekstrespons) > 0: 
             try: 
