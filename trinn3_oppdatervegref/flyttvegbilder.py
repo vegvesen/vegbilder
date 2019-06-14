@@ -305,7 +305,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     for strekning in tempnytt.keys():
         # Sjekker om strekningene skal snus på strekningen relativt til info i EXIF-headeren
         snuretning = sjekkretning( tempnytt[strekning] ) 
-        logging.info( strekning + " " +  snuretning) 
+        # logging.info( strekning + " " +  snuretning) 
         
         # Tar med oss info om retningen skal snus og komponerer nye streknings (mappe) og filnavn: 
         for fil in tempnytt[strekning]['filer']: 
@@ -320,7 +320,13 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             tempfilnavn.add( os.path.join( nyttdir, nystrekning, nyttfilnavn) )
             
             if not nystrekning in nytt.keys(): 
-                logging.info( " ".join( [ strekning, snuretning, '=>', nystrekning ] ) ) 
+            
+                gmltStrNavn = '/'.join( meta['temp_gammelfilnavn'].split('/')[-6:-1] ) 
+                snuindikator = snuretning
+                if snuretning == 'snudd': 
+                    snuindikator = snuretning.upper()
+            
+                logging.info( " ".join( [ 'Mappenavn', gmltStrNavn, snuindikator, '=>', nystrekning ] ) ) 
 
                 nytt[nystrekning] = { 'strekningsnavn' : nystrekning, 'filer' : [] }
 
@@ -330,19 +336,30 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     ferdigcount = 0  
     count_manglerwebpfil = 0 
     ferdigfilnavn = set()
+
+    # holder styr på hvor vi er hen: 
+    mappeCount = 0
+    antallMapper = str( len( nytt.keys()) ) 
+    
+    
     for ferdigstrekning in nytt.keys(): 
-        logging.info( 'Ny strekningdefinisjon: ' + ferdigstrekning) 
+        # logging.info( 'Ny strekningdefinisjon: ' + ferdigstrekning) 
+        mappeCount += 1
         for eifil in nytt[ferdigstrekning]['filer']:
             ferdigcount += 1
+        
+            if ferdigcount in (1, 5, 10, 50, 100, 500) or ferdigcount % 1000 == 0: 
+                logging.info( ' '.join( [ 'Flytter fil ', str( ferdigcount ), 'av', str( tempcount), 
+                                            'mappe', str( mappeCount), 'av', antallMapper ] ) ) 
         
             meta = deepcopy( eifil) 
             # Klargjør for selve filflytting-operasjonen
             gammelfil = meta.pop( 'temp_gammelfilnavn' )
             skrivefil = meta['filnavn'] 
             skrivnyfil = os.path.join( nyttdir, ferdigstrekning, skrivefil) 
-            logging.debug( ' '.join( ['flytter filer', gammelfil, ' => ', skrivnyfil ]) ) 
+            logging.debug( ' '.join( ['ENDRINGSINFO flytter filer', gammelfil, ' => ', skrivnyfil ]) ) 
             ferdigfilnavn.add( skrivnyfil)    
-            
+                        
             nymappenavn = os.path.join( nyttdir, ferdigstrekning)
             nymappe = Path( nymappenavn ) 
             nymappe.mkdir( parents=True, exist_ok=True)
@@ -369,8 +386,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
 
     if count_manglerwebpfil > 0: 
         logging.warning( "Mangler " + str(count_manglerwebpfil) + " webp-filer"  ) 
-    logging.info( " ".join( [ "Antall filnavn på ulike steg:", str( len( tempfilnavn)), 
-                            str( len(tempfilnavn)), str( len(ferdigfilnavn)) ]) )
+    logging.info( " ".join( [ "Antall filnavn på ulike steg:", str( len( tempfilnavn)), str( len(ferdigfilnavn)) ]) )
     dt = datetime.now() - t0
     logging.info( " ".join( [ "Tidsforbruk", str( dt.total_seconds()), 'sekunder' ])) 
     
@@ -431,7 +447,10 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
                                                     
                 metadata['temp_gammelfilnavn'] = os.path.join( mappe, 
                                                     os.path.splitext( bilde)[0] )
-                                                    
+                
+                # logging.info( 'DEBUG: Gammelt filnavn: ' + metadata['temp_gammelfilnavn'] ) 
+                # tmp = a
+
                 count += 1      # Debug, mindre datasett
                 if count <= 10: # Debug, mindre datasett
                     pass
@@ -492,7 +511,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.5 den 14. Juni 2019 kl 0954"
+    versjoninfo = "Flyttvegbilder Versjon 2.6 den 14. Juni 2019 kl 1630"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")

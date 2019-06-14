@@ -50,41 +50,51 @@ def duallogSetup(logdir='log', logname='mylog'):
 
     # Create the root logger.
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
 
-    # Validate the given directory.
-    logdir = os.path.normpath(logdir)
+    # Sjekker om det finnes "handlers" fra før. 
+    # I så fall skal vi ikke klusse med dem, men respektere at andre funksjoner kan 
+    # ha satt opp sitt eget system. 
+    if len(  logger.handlers) > 0: 
+        logger.info( "duallog.duallogSetup: Logger finnes fra før, klusser ikke med den" ) 
+    else: 
 
-    # Create a folder for the logfiles.
-    if not os.path.exists(logdir):
-        os.makedirs(logdir)
+        logger.setLevel(logging.INFO)
 
-    # Construct the logfile name.
-    t = datetime.datetime.now()
-    logfile = '{year:04d}{mon:02d}{day:02d}-' \
-        '{hour:02d}{min:02d}{sec:02d}.log'.format(
-            year=t.year, mon=t.month, day=t.day, 
-            hour=t.hour, min=t.minute, sec=t.second)
-    logfile = logname + logfile
-    logfile = os.path.join(logdir, logfile)
+        # 
 
-    # Set up logging to the logfile.
-    filehandler = logging.handlers.RotatingFileHandler(
-        filename=logfile,
-        maxBytes=10*1024*1024,
-        backupCount=100)
-    filehandler.setLevel(logging.INFO)
-    fileformatter = logging.Formatter(
-        '%(asctime)s %(levelname)-8s: %(message)s')
-    filehandler.setFormatter(fileformatter)
-    logger.addHandler(filehandler)
+        # Validate the given directory.
+        logdir = os.path.normpath(logdir)
 
-    # Set up logging to the console.
-    streamhandler = logging.StreamHandler()
-    streamhandler.setLevel(logging.INFO)
-    streamformatter = logging.Formatter('%(levelname)s: %(message)s')
-    streamhandler.setFormatter(streamformatter)
-    logger.addHandler(streamhandler)
+        # Create a folder for the logfiles.
+        if not os.path.exists(logdir):
+            os.makedirs(logdir)
+
+        # Construct the logfile name.
+        t = datetime.datetime.now()
+        logfile = '{year:04d}{mon:02d}{day:02d}-' \
+            '{hour:02d}{min:02d}{sec:02d}.log'.format(
+                year=t.year, mon=t.month, day=t.day, 
+                hour=t.hour, min=t.minute, sec=t.second)
+        logfile = logname + logfile
+        logfile = os.path.join(logdir, logfile)
+
+        # Set up logging to the logfile.
+        filehandler = logging.handlers.RotatingFileHandler(
+            filename=logfile,
+            maxBytes=10*1024*1024,
+            backupCount=100)
+        filehandler.setLevel(logging.INFO)
+        fileformatter = logging.Formatter( '%(asctime)s %(levelname)-8s: %(message)s' )
+        filehandler.setFormatter(fileformatter)
+        
+        logger.addHandler(filehandler)
+        
+        
+        streamhandler = logging.StreamHandler()
+        streamhandler.setLevel(logging.INFO)
+        streamformatter = logging.Formatter('%(levelname)s: %(message)s')
+        streamhandler.setFormatter(streamformatter)
+        logger.addHandler(streamhandler)
 
 
 
