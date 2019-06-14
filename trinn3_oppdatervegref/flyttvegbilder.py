@@ -27,7 +27,7 @@ import xmltodict
 
 import duallog
 
-def visveginfo_veglenkeoppslag( metadata, filnavn=''): 
+def visveginfo_veglenkeoppslag( metadata, filnavn='', proxies=''): 
     """
     Mottar et metadata-element, fisker ut det som trengs for å gjøre oppslag på veglenkeID og posisjon,
     henter oppdatert vegreferanse, føyer det til metadata-elementet og sender tilbake. 
@@ -42,7 +42,7 @@ def visveginfo_veglenkeoppslag( metadata, filnavn=''):
                     'ViewDate' : idag[0:10] } 
         
         url = 'http://visveginfo-static.opentns.org/RoadInfoService/GetRoadReferenceForNVDBReference' 
-        r = requests.get( url, params=params)
+        r = requests.get( url, params=params, proxies=proxies)
         logging.debug( r.url) 
         tekstrespons = r.text
         if len( tekstrespons) > 0: 
@@ -269,14 +269,14 @@ def lag_strekningsnavn( metadata):
         
     return (nystrekning, nyttfilnavn) 
     
-def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm',  nyttdir='../bilder/testflytting/test1_Ev134'): 
+def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm',  nyttdir='../bilder/testflytting/test1_Ev134', proxies=''): 
     
     """
     Flytter bilder (*.jpg) og metadata (*.webp, *.json) over til mappe- og filnavn som er riktig etter 
     gjeldende vegreferanse. 
     """ 
     
-    gammelt = lesfiler_nystedfesting(datadir=gammeltdir) 
+    gammelt = lesfiler_nystedfesting(datadir=gammeltdir, proxies=proxies) 
     
     tempnytt = {} # Midlertidig lager for nye strekninger, før vi evt snur retning
     nytt = {} # her legger vi nye strekninger etter at de evt er snudd. 
@@ -377,7 +377,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
                 
     # pdb.set_trace()
 
-def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm'): 
+def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm', proxies=''): 
     """
     Finner alle mapper der det finnes *.json-filer med metadata, og sjekker stedfestingen 
     på disse. Returnerer dictionary sortert med 
@@ -438,7 +438,7 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
                 
                 # Oppdaterer vegreferanseverdier:
                 try: 
-                    metadata2 = deepcopy( visveginfo_veglenkeoppslag( metadata, filnavn=fname) ) 
+                    metadata2 = deepcopy( visveginfo_veglenkeoppslag( metadata, filnavn=fname, proxies=proxies) ) 
                 except Exception:
                     count_fatalt += 1 
                     logging.error( 'Fatal feil i visveginfo_veglenkeoppslag for fil' + fname)
@@ -544,6 +544,6 @@ if __name__ == "__main__":
             logging.info( 'Bruker proxy for http-kall: ' + str( proxies )  ) 
         else: 
             logging.info( 'Bruker IKKE proxy for http kall' )          
-        flyttfiler( gammeltdir=gammeltdir, nyttdir=nyttdir) 
+        flyttfiler( gammeltdir=gammeltdir, nyttdir=nyttdir, proxies=proxies) 
         logging.info( "FERDIG" + versjoninfo ) 
     
