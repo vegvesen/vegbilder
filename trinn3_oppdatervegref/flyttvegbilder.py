@@ -104,7 +104,7 @@ def visveginfo_veglenkeoppslag( metadata, filnavn='', proxies=''):
         metadata['ny_visveginfosuksess'] = False
 
         
-    metadata['vegreferansedato'] = datetime.today().strftime('%Y-%m%d')      
+    metadata['vegreferansedato'] = datetime.today().strftime('%Y-%m-%d')      
     metadata['exif_imageproperties'] = exif_imageproperties
     return metadata
 
@@ -289,7 +289,8 @@ def mypathsplit( filnavn, antallbiter):
     biter.append( rot) 
     return list( reversed( biter) ) 
     
-def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm',  nyttdir='../bilder/testflytting/test1_Ev134', proxies=''): 
+def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm',  
+                nyttdir='../bilder/testflytting/test1_Ev134', proxies='', stabildato='1949-31-12'): 
     
     """
     Kopierer bilder (*.jpg) og metadata (*.webp, *.json) over til mappe- og filnavn som er riktig etter 
@@ -299,7 +300,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     logging.info( "Kopierer bilder fra: " + gammeltdir ) 
     logging.info( "                til: " + nyttdir ) 
     
-    gammelt = lesfiler_nystedfesting(datadir=gammeltdir, proxies=proxies) 
+    gammelt = lesfiler_nystedfesting(datadir=gammeltdir, proxies=proxies, stabildato=stabildato) 
     
     tempnytt = {} # Midlertidig lager for nye strekninger, før vi evt snur retning
     nytt = {} # her legger vi nye strekninger etter at de evt er snudd. 
@@ -376,7 +377,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
         for eifil in nytt[ferdigstrekning]['filer']:
             ferdigcount += 1
         
-            if ferdigcount in (1, 5, 10, 50, 100, 250, 500) or ferdigcount % 1000 == 0: 
+            if ferdigcount in (1, 5, 10, 50) or ferdigcount % 100 == 0: 
                 logging.info( ' '.join( [ 'Kopierer fil ', str( ferdigcount ), 'av', str( tempcount), 
                                             'mappe', str( mappeCount), 'av', antallMapper ] ) ) 
         
@@ -421,7 +422,23 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
                 
     # pdb.set_trace()
 
-def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm', proxies=''): 
+def sjekkdato( nyeste, eldste): 
+    """
+    Sjekker om den første datoen er nyere enn den eldste (TRUE), eller om de er byttet om
+    
+    Dato = tekststreng på formen '2019-03-31' 
+    """
+    mylist = [ nyeste, eldste ]
+    mylist_sortert = sorted( mylist) 
+    
+    if mylist[0] == mylist_sortert[0]: 
+        return True
+    else: 
+        return False
+
+
+def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm', 
+                        proxies='', stabildato='1949-12-31'): 
     """
     Finner alle mapper der det finnes *.json-filer med metadata, og sjekker stedfestingen 
     på disse. Returnerer dictionary sortert med 
@@ -431,6 +448,7 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
 
     oversikt = { } 
     count_fatalt = 0 
+    count_ferskvare = 0 
 
     t0 = datetime.now()
     logging.info(str( t0) )
@@ -483,21 +501,33 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
                 if count <= 10: # Debug, mindre datasett
                     pass
                 
-                # Oppdaterer vegreferanseverdier:
-                try: 
-                    metadata2 = deepcopy( visveginfo_veglenkeoppslag( metadata, filnavn=fname, proxies=proxies) ) 
-                except Exception:
-                    count_fatalt += 1 
-                    logging.error( 'Fatal feil i visveginfo_veglenkeoppslag for fil' + fname)
-                    logging.exception('Stack trace for fatal feil' )
+                if 'vegreferansedato' in metadata.keys() and sjekkdato( stabildato, metadata['vegreferansedato']):
+                    count_ferskvare += 1
+                    metadata2 = deepcopy( metadata )
+                    metadata2['ny_visveginfosuksess'] = True
+                    oversikt[strekningsmappe]['filer'].append( metadata2 )
                 else: 
-                    oversikt[strekningsmappe]['filer'].append( metadata2) 
+                    # Oppdaterer vegreferanseverdier:
+                    try: 
+                        metadata2 = deepcopy( visveginfo_veglenkeoppslag( metadata, filnavn=fname, proxies=proxies) ) 
+                    except Exception:
+                        count_fatalt += 1 
+                        logging.error( 'Fatal feil i visveginfo_veglenkeoppslag for fil' + fname)
+                        logging.exception('Stack trace for fatal feil' )
+                    else: 
+                        oversikt[strekningsmappe]['filer'].append( metadata2) 
                 
             else: 
                 logging.warning( 'Måtte gi opp lesing av fil ' + fname ) 
 
     if count_fatalt > 0:
         logging.error( 'Faltal feil for ' + str(count_fatalt) + 'filer' ) 
+        
+    if count_ferskvare == 0: 
+        logging.info( "Ingen vegbilder hadde vegreferansedato nyere enn " + stabildato ) 
+    else:
+        logging.info( str( count_ferskvare ) + " vegbilder hadde vegreferansedato nyere enn " + stabildato )
+    
     logging.info( str( datetime.now()))
     dt = datetime.now() - t0
     logging.info( " ".join( [ "Tidsforbruk stedfesting", str(dt.total_seconds()), 'sekunder' ] ))     
@@ -534,12 +564,15 @@ if __name__ == "__main__":
     logdir = 'loggfiler_flyttvegbilder' 
     logname='flyttvegbilder_' 
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
+    eldstedato = '1949-31-12'
+    stabildato = eldstedato
+
 
     # flyttfiler(gammeltdir='vegbilder/testbilder_prosessert/orginal_stedfesting', 
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.7 den 14. Juni 2019 kl 2200"
+    versjoninfo = "Flyttvegbilder Versjon 2.8 den 15. Juni 2019 kl 1000"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
@@ -569,6 +602,10 @@ if __name__ == "__main__":
                 
             if 'proxies' in oppsett.keys():
                 proxies = oppsett['proxies']            
+
+            if 'stabildato' in oppsett.keys():
+                stabildato = oppsett['stabildato']            
+
                 
         else: 
             gammeltdir = sys.argv[1]
@@ -590,7 +627,10 @@ if __name__ == "__main__":
         if proxies: 
             logging.info( 'Bruker proxy for http-kall: ' + str( proxies )  ) 
         else: 
-            logging.info( 'Bruker IKKE proxy for http kall' )          
-        flyttfiler( gammeltdir=gammeltdir, nyttdir=nyttdir, proxies=proxies) 
+            logging.info( 'Bruker IKKE proxy for http kall' ) 
+            
+        if stabildato != eldstedato: 
+            logging.info( "Sjekker kun bilder med vegreferansedato eldre enn " + stabildato ) 
+        flyttfiler( gammeltdir=gammeltdir, nyttdir=nyttdir, proxies=proxies, stabildato=stabildato) 
         logging.info( "FERDIG" + versjoninfo ) 
     

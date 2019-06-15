@@ -1,8 +1,11 @@
 { "info" : "Oppsettfil for flyttvegbilder",
   "orginalmappe" : "../../testbilder_prosessert/orginal_stedfesting", 
-  "nymappe"      : "../../testbilder_nystedfesting", 
+  "nymappe"      : "../../testbilder_prosessert/ny_stedfesting", 
   "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
   "logname"      : "nyvegreferanse_", 
   "logdir"       : "loggfiler_flyttvegbilder", 
-  "proxies"      :  { "http" : "proxy.vegvesen.no:8080", "https" : "proxy.vegvesen.no:8080"  } 
+  "INFO_datologikk" : "Hvis vegreferansedato > stabildato saa trenger vi IKKE hente nye vegreferanseverdier",
+  "stabildato" : "2017-06-15",
+  "ignorerproxies"      :  "", 
+  "proxies" : { "http" : "proxy.vegvesen.no:8080", "https" : "proxy.vegvesen.no:8080"  } 
   }
