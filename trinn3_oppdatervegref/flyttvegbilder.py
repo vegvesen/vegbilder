@@ -239,7 +239,15 @@ def lag_strekningsnavn( metadata):
 
         vegnr = metadata['vegkat'].upper() + metadata['vegstat'].lower() + \
                     str( metadata['vegnr'] ) 
-        vegnavn = '_'.join( [ fylke, vegnr ]) 
+        
+        # E, R skal ha - mellom fylke og vegkat, mens F skal ha _
+        # Dette for at sortering i filutforsker skal liste E, R før F
+        if metadata['vegkat'].upper() in [ 'E', 'R']:         
+            vegnavn = '_'.join( [ fylke, vegnr ]) 
+        else: 
+            vegnavn = '-'.join( [ fylke, vegnr ]) 
+            
+        
         rotnavn = os.path.join( fylke, aar, vegnavn, hptekst) 
         
         
@@ -267,10 +275,7 @@ def lag_strekningsnavn( metadata):
         nyttfilnavn = re.sub( '.jpg', '', metadata['exif_filnavn'] ) 
         tmpmapper = mypathsplit( metadata['temp_gammelfilnavn'], 6)
         nystrekning = '/'.join( tmpmapper[-6:-1] ) 
-        
-        # nystrekning = '/'.join( metadata['temp_gammelfilnavn'].split('/')[-6:-1] )
-        nystrekning = re.sub( '-', '_', nystrekning) 
-        
+                
     return (nystrekning, nyttfilnavn) 
     
 def mypathsplit( filnavn, antallbiter): 
@@ -530,7 +535,7 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
     
     logging.info( str( datetime.now()))
     dt = datetime.now() - t0
-    logging.info( " ".join( [ "Tidsforbruk stedfesting", str(dt.total_seconds()), 'sekunder' ] ))     
+    logging.info( " ".join( [ "Tidsforbruk", str(dt.total_seconds()), 'sekunder' ] ))     
     return oversikt
             
         
@@ -572,7 +577,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.8 den 15. Juni 2019 kl 1000"
+    versjoninfo = "Flyttvegbilder Versjon 2.9 den 16. Juni 2019 kl 1100"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
