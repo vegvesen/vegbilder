@@ -375,6 +375,10 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     mappeCount = 0
     antallMapper = str( len( nytt.keys()) ) 
     
+    # teller opp om bildet finnes fra før med samme filnavn
+    countBildetFinnes = 0 
+    countJsonFinnes = 0
+    countWebpFines = 0 
     
     for ferdigstrekning in nytt.keys(): 
         # logging.info( 'Ny strekningdefinisjon: ' + ferdigstrekning) 
