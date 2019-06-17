@@ -19,6 +19,7 @@ from shutil import copyfile
 import sys
 import logging
 from xml.parsers.expat import ExpatError
+import time
 
 
 
@@ -213,10 +214,25 @@ def sjekkfelt( metadata, snuretning='Ikke snudd'):
         
     return metadata
         
+def plukkstedsnavn( hpnavn, ukjent=''): 
+    """
+    Plukker ut stedsnavn-komponenten av navnet hp05_Granåsen eller hp50_X_Ditt_Fv309_datt
+    
+    Nøkkelord ukjent='' kan detaljstyre hva som er returverdi hvis vi ikke har noe stedsnavn 
+    """ 
+    
+    stedsnavn = '_'.join( hpnavn.split( '_')[1:] ) 
+    
+    if not stedsnavn: 
+        stedsnavn = ukjent
+        
+    return stedsnavn 
+    
+
 
 def lag_strekningsnavn( metadata): 
     """
-    Komponerer nytt strekningsnavn og filnavn, og returnerer tuple (strekningsnavn, filnavn) 
+    Komponerer nytt strekningsnavn og filnavn, og returnerer tuple (strekningsnavn, filnavn, stedsnavn) 
     
     Modifiserer IKKE metadata
     """ 
@@ -235,7 +251,7 @@ def lag_strekningsnavn( metadata):
         # Deler opp navn av typen 06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm 
         # og plukker ut navne-biten av 
         hpbit = metadata['exif_strekningreferanse'].split('/')[1]
-        strekningsnavn = '_'.join( hpbit.split('_')[1:] ) 
+        stedsnavn = plukkstedsnavn( hpbit ) 
 
         vegnr = metadata['vegkat'].upper() + metadata['vegstat'].lower() + \
                     str( metadata['vegnr'] ) 
@@ -252,12 +268,11 @@ def lag_strekningsnavn( metadata):
         
         
         ## Blir bare kluss med stedsnavn for strekninger 
-        # if strekningsnavn: 
-            # nystrekning = ( '_'.join( [rotnavn, strekningsnavn ]) )
+        # if stedsnavn: 
+            # nystrekning = ( '_'.join( [rotnavn, stedsnavn ]) )
         # else: 
             # nystrekning = rotnavn
         nystrekning = rotnavn
-        
         
         if 'feltkode' in metadata.keys(): 
             felt = 'F' + str( metadata['feltkode'] )
@@ -275,25 +290,47 @@ def lag_strekningsnavn( metadata):
         nyttfilnavn = re.sub( '.jpg', '', metadata['exif_filnavn'] ) 
         tmpmapper = mypathsplit( metadata['temp_gammelfilnavn'], 6)
         nystrekning = '/'.join( tmpmapper[-6:-1] ) 
+        stedsnavn = '' # Stedsnavn står allerede i gammelt filnavn, trenger ikke føye det til 2 ganger
                 
-    return (nystrekning, nyttfilnavn) 
+    return (nystrekning, nyttfilnavn, stedsnavn) 
     
 def mypathsplit( filnavn, antallbiter): 
     """
-    Deler opp et filnavn (mappenavn) i antallbiter komponenter, regnet bakfra
+    Deler opp et filnavn (mappenavn) i antallbiter komponenter, regnet bakfra, pluss rot-komponent
 
-    returnerer liste med [rot, bit-2, bit-1, bakerst] for antallbiter=4
-    """
+    returnerer liste med [rot, tredjbakerst, nestbakerst, bakerst] for antallbiter=3
     
+    Hvis antallbiter > antall komponenter reduserers så mange elementer som fil/mappenavnet kan deles opp i 
+    """
+  
     biter = []
     for i in range(antallbiter) : 
         (rot, hale) = os.path.split( filnavn ) 
-        biter.append( hale) 
+        if hale: 
+            biter.append( hale) 
         filnavn = rot
-        
-    biter.append( rot) 
-    return list( reversed( biter) ) 
     
+    if rot: 
+        biter.append( rot) 
+        
+    return list( reversed( biter) ) 
+   
+def uniktstedsnavn( mydict, stedsnavn): 
+    """
+    Sjekker at stedsnavn kun forekommer 1 og kun 1 gang
+    """
+    
+    count = 0
+    for kk in mydict.keys():
+        if stedsnavn in mydict[kk]: 
+            count += 1
+            
+    if count == 1: 
+        return True
+    else: 
+        return False 
+    
+   
 def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm',  
                 nyttdir='../bilder/testflytting/test1_Ev134', proxies='', stabildato='1949-31-12'): 
     
@@ -307,31 +344,63 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     
     gammelt = lesfiler_nystedfesting(datadir=gammeltdir, proxies=proxies, stabildato=stabildato) 
     
-    tempnytt = {} # Midlertidig lager for nye strekninger, før vi evt snur retning
+    tempnytt = { } # Midlertidig lager for nye strekninger, før vi evt snur retning
     nytt = {} # her legger vi nye strekninger etter at de evt er snudd. 
     
     t0 = datetime.now()
+    
+    # Datastruktur som holder på relasjonen 06_Ev134_hp5 <=> Granåsen
+    # Hvis vi skal gjenbruke navnet på strekningen (Granåsen) så må vi 
+    # sikre at det er 1:1 mellom gammmel og ny HP-inndeling. 
+    # Dvs at Granåsen ikke brukes på flere HP-inndelinger enn denne. 
+    # Vi bygger opp en datastruktur som ser slik ut
+    # 
+    #   hpnavn = { '06_Ev134' { 'hp05' : set( 'Granåsen' ), 
+    #                            'hp06' : set( 'X1_Asdf_X2' ) 
+    #                 }
+    #           
+    # Hvis hvert sett kun har ett medlem, og dette medlemmet ikke finnes i noen av de andre 
+    # hp-elementene for '06_Ev134' så kan vi gjenbruke navnet. 
+
+    hpnavn = { } 
     
     gammelcount = 0 
     for strekning in gammelt.keys():
         for fil in gammelt[strekning]['filer']: 
             
+            # pdb.set_trace()
             gammelcount += 1
             if fil['ny_visveginfosuksess']: 
-                (nytt_strekningsnavn, junk)  = lag_strekningsnavn( fil) 
+                (nytt_strekningsnavn, junk, stedsnavn)  = lag_strekningsnavn( fil) 
                 
             else: 
-                nytt_strekningsnavn = str(strekning) 
+                nytt_strekningsnavn = strekning 
+                (rot, tmp, junk) = mypathsplit( strekning, 2) 
+                stedsnavn = plukkstedsnavn( tmp )  
+                
                 
             if not nytt_strekningsnavn in tempnytt.keys():
                 tempnytt[nytt_strekningsnavn] = { 'strekningsnavn' : nytt_strekningsnavn, 'filer' : [] }
-                
+            
+            
             nyfil = deepcopy( fil) 
             tempnytt[nytt_strekningsnavn]['filer'].append( nyfil) 
-    
+            
+            # Populerer "hpnavn-datastrukturen med verdier
+            if stedsnavn: 
+                (rot, hp, felt) = mypathsplit( nytt_strekningsnavn, 2 ) 
+                if not rot in hpnavn.keys(): 
+                    hpnavn[rot] = {} 
+                    
+                
+                if not hp in hpnavn[rot].keys(): 
+                    hpnavn[rot][hp] = {  stedsnavn }
+                else: 
+                    hpnavn[rot][hp].add( stedsnavn ) 
+            
     tempcount = 0
     tempfilnavn = set()
-    # pdb.set_trace()
+    
     for strekning in tempnytt.keys():
         # Sjekker om strekningene skal snus på strekningen relativt til info i EXIF-headeren
         snuretning = sjekkretning( tempnytt[strekning] ) 
@@ -341,7 +410,14 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
         for fil in tempnytt[strekning]['filer']: 
             tempcount += 1
             meta = deepcopy( sjekkfelt( fil, snuretning=snuretning) )
-            (nystrekning, nyttfilnavn) = lag_strekningsnavn( meta) 
+            (nystrekning, nyttfilnavn, stedsnavn) = lag_strekningsnavn( meta) 
+            
+            # Føyer til stedsnavn hvis vi har et og det er unikt: 
+            (rot, hp, felt) = mypathsplit( nystrekning, 2) 
+            if stedsnavn and rot in hpnavn.keys() and uniktstedsnavn( hpnavn[rot], stedsnavn): 
+                hp = '_'.join( [ hp, stedsnavn ] ) 
+            nystrekning = '/'.join( [ rot, hp, felt] ) 
+            
             meta['filnavn'] = nyttfilnavn
             meta['mappenavn'] = nystrekning
             meta['strekningsreferanse'] = '/'.join( nystrekning.split('/')[-3:-1])
@@ -581,7 +657,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 2.9 den 16. Juni 2019 kl 1100"
+    versjoninfo = "Flyttvegbilder Versjon 3.0 den 17. Juni 2019 kl 2225"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
@@ -640,6 +716,12 @@ if __name__ == "__main__":
             
         if stabildato != eldstedato: 
             logging.info( "Sjekker kun bilder med vegreferansedato eldre enn " + stabildato ) 
-        flyttfiler( gammeltdir=gammeltdir, nyttdir=nyttdir, proxies=proxies, stabildato=stabildato) 
+            
+        if not isinstance( gammeltdir, list): 
+            gammeltdir = [ gammeltdir ] 
+            
+        for idx, enmappe in enumerate( gammeltdir): 
+            logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(gammeltdir)) ] ) ) 
+            flyttfiler( gammeltdir=enmappe, nyttdir=nyttdir, proxies=proxies, stabildato=stabildato) 
         logging.info( "FERDIG" + versjoninfo ) 
     

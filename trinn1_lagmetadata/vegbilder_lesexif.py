@@ -419,7 +419,7 @@ if __name__ == '__main__':
     logname='lesexif_' 
     
     
-    versjonsinfo = "Versjon 3.0 den 6. juni 2019 kl 14:49"
+    versjonsinfo = "Versjon 3.1 den 17. juni 2019 kl 22:37"
 
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
@@ -486,7 +486,13 @@ if __name__ == '__main__':
             logging.info( 'Lager metadata for vegbilder i mappe ' + datadir ) 
             if overskrivGammalJson: 
                 logging.info( 'Overskriver alle eldre metadata som måtte finnes fra før') 
-            indekserbildemappe( datadir, overskrivGammalJson=overskrivGammalJson) 
+                
+            if not isinstance( datadir, list): 
+                datadir = [ datadir ]   
+  
+            for idx, enmappe in enumerate( datadir ):
+                logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(datadir)) ] ) ) 
+                indekserbildemappe( enmappe, overskrivGammalJson=overskrivGammalJson) 
 
     print( versjonsinfo ) 
 

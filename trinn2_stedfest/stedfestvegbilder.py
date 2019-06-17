@@ -383,7 +383,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 2.9 den 8. juni 2019 kl 0800"
+    versjonsinfo = "Stedfest vegbilder Versjon 3.0 den 17. juni 2019 kl 2231"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
@@ -453,8 +453,15 @@ if __name__ == '__main__':
                 logging.info( 'Bruker proxy for http-kall: ' + str( proxies )  ) 
             else: 
                 logging.info( 'Bruker IKKE proxy for http kall' )  
-            sorter_mappe_per_meter( datadir ) 
-            stedfest_jsonfiler( datadir, overskrivStedfesting=overskrivStedfesting, proxies=proxies )  
+                
+            if not isinstance( datadir, list): 
+                datadir = [ datadir ] 
+                
+            for idx, enmappe in enumerate( datadir ): 
+                logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(datadir)) ] ) ) 
+                
+                sorter_mappe_per_meter( enmappe ) 
+                stedfest_jsonfiler( enmappe, overskrivStedfesting=overskrivStedfesting, proxies=proxies )  
   
             logging.info( "FERDIG " + versjonsinfo ) 
 
