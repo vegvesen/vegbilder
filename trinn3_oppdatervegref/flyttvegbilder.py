@@ -289,7 +289,10 @@ def lag_strekningsnavn( metadata):
         # Returnerer det gamle navnet på streking og filnavn
         nyttfilnavn = re.sub( '.jpg', '', metadata['exif_filnavn'] ) 
         tmpmapper = mypathsplit( metadata['temp_gammelfilnavn'], 6)
+        
+        tmpmapper[-3] = 'HISTORISK-' + tmpmapper[-3] 
         nystrekning = '/'.join( tmpmapper[-6:-1] ) 
+                
         stedsnavn = '' # Stedsnavn står allerede i gammelt filnavn, trenger ikke føye det til 2 ganger
                 
     return (nystrekning, nyttfilnavn, stedsnavn) 
@@ -373,11 +376,11 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             if fil['ny_visveginfosuksess']: 
                 (nytt_strekningsnavn, junk, stedsnavn)  = lag_strekningsnavn( fil) 
                 
-            else: 
-                nytt_strekningsnavn = strekning 
-                (rot, tmp, junk) = mypathsplit( strekning, 2) 
-                stedsnavn = plukkstedsnavn( tmp )  
-                
+            else: # Mangler stefesting = historiske data
+                (rot, hpmappenavn, feltmappenavn) = mypathsplit( strekning, 2) 
+                stedsnavn =  plukkstedsnavn( hpmappenavn )  
+                nytt_strekningsnavn = '/'.join( [ rot, 'HISTORISK-'+hpmappenavn, feltmappenavn ] )
+                pdb.set_trace()
                 
             if not nytt_strekningsnavn in tempnytt.keys():
                 tempnytt[nytt_strekningsnavn] = { 'strekningsnavn' : nytt_strekningsnavn, 'filer' : [] }
