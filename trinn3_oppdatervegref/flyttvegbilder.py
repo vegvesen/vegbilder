@@ -28,6 +28,36 @@ import xmltodict
 
 import duallog
 
+
+
+def anropvisveginfo( url, params, filnavn, proxies='', ventetid=0.5): 
+    """
+    Anroper visveginfo og har en del feilhåndtering-logikk. Prøver på ny etter en pause ved nettverksfeil eller overbelastning
+    """ 
+
+    logging.debug( ' '.join( [ 'Skal anrope visveginfo:', url, str(params), filnavn ] ) )  
+    count = 0
+    sovetid = 0 
+    anropeMer = True 
+    while count < 4 and anropeMer: 
+        count += 1
+        # r = requests.get( url, params) 
+        # svartekst = r.text
+        
+        # Debugger ulike svartekst-alternatativ. 
+        svartekst = '<RoadReference></RoadReference>' 
+        
+        if 'RoadReference' in svartekst: 
+            anropeMer = False 
+        
+        if count > 1: 
+            sovetid = sovetid + count * ventetid
+            logging.warning( ' '.join( [ "Visvegionfo-kall FEILET", url, params,  filnavn, 
+                                        "prøver igjen om", str( sovetid), "sekunder" ] ) ) 
+            time.sleep 
+
+    return "" 
+
 def visveginfo_veglenkeoppslag( metadata, filnavn='', proxies=''): 
     """
     Mottar et metadata-element, fisker ut det som trengs for å gjøre oppslag på veglenkeID og posisjon,
