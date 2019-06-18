@@ -41,6 +41,7 @@ def anropvisveginfo( url, params, filnavn, proxies='', ventetid=15):
     while count < 4 and anropeMer: 
         count += 1
         r = requests.get( url, params=params, proxies=proxies) 
+        logging.debug( r.url + ' status kode: ' + str( r.status_code ))
         svartekst = r.text
         
         # Tom returverdi = veglenkeposisjon finnes ikke. 
@@ -75,9 +76,7 @@ def visveginfo_veglenkeoppslag( metadata, filnavn='', proxies=''):
                     'ViewDate' : idag[0:10] } 
         
         url = 'http://visveginfo-static.opentns.org/RoadInfoService/GetRoadReferenceForNVDBReference' 
-        r = requests.get( url, params=params, proxies=proxies)
-        logging.debug( r.url) 
-        tekstrespons = r.text
+        tekstrespons = anropvisveginfo( url, params, filnavn, proxies=proxies )
         if len( tekstrespons) > 0: 
             try: 
                 vvidata = xmltodict.parse( tekstrespons )
@@ -424,7 +423,6 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
                 (rot, hp, felt) = mypathsplit( nytt_strekningsnavn, 2 ) 
                 if not rot in hpnavn.keys(): 
                     hpnavn[rot] = {} 
-                    
                 
                 if not hp in hpnavn[rot].keys(): 
                     hpnavn[rot][hp] = {  stedsnavn }
@@ -468,8 +466,17 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
                 snuindikator = snuretning
                 if snuretning == 'snudd': 
                     snuindikator = snuretning.upper()
-            
-                logging.info( " ".join( [ 'Mappenavn', gmltStrNavn, snuindikator, '=>', nystrekning ] ) ) 
+                    
+                # Sammenligner gammelt og nytt strekningsnavn. Må  dekomponere for å sikre oss mot / versus \ - problematikk
+                gamlebiter  = mypathsplit( gmltStrNavn, 3) 
+                nyebiter    = mypathsplit( nystrekning, 3) 
+                
+                if '/'.join( gamlebiter[1:]) ==  '/'.join( nyebiter[1:] ): 
+                    infostr = 'Mappenavn uendret'
+                else: 
+                    infostr = 'Mappenavn ENDRET'
+                
+                logging.info( " ".join( [ infostr, gmltStrNavn, snuindikator, '=>', nystrekning ] ) ) 
 
                 nytt[nystrekning] = { 'strekningsnavn' : nystrekning, 'filer' : [] }
 
