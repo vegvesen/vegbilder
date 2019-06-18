@@ -311,7 +311,7 @@ def lag_strekningsnavn( metadata):
         dato =  '_'.join( metadata['exif_dato'].split('-')[0:3] )   
         
         nystrekning = os.path.join( nystrekning, '_'.join( [felt, dato] ) )
-        nyttfilnavn = '_'.join( [   'Fy' + vegnavn, hptekst, felt, 'm' + str( round( metadata['meter'] )) ] )
+        nyttfilnavn = '_'.join( [   'Fy' + vegnavn, hptekst, felt, 'm' + str( round( metadata['meter'] )).zfill(5) ] )
 
         # pdb.set_trace()
 
@@ -401,7 +401,6 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     for strekning in gammelt.keys():
         for fil in gammelt[strekning]['filer']: 
             
-            # pdb.set_trace()
             gammelcount += 1
             if fil['ny_visveginfosuksess']: 
                 (nytt_strekningsnavn, junk, stedsnavn)  = lag_strekningsnavn( fil) 
@@ -410,7 +409,6 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
                 (rot, hpmappenavn, feltmappenavn) = mypathsplit( strekning, 2) 
                 stedsnavn =  plukkstedsnavn( hpmappenavn )  
                 nytt_strekningsnavn = '/'.join( [ rot, 'HISTORISK-'+hpmappenavn, feltmappenavn ] )
-                pdb.set_trace()
                 
             if not nytt_strekningsnavn in tempnytt.keys():
                 tempnytt[nytt_strekningsnavn] = { 'strekningsnavn' : nytt_strekningsnavn, 'filer' : [] }
