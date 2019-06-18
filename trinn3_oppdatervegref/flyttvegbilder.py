@@ -29,34 +29,36 @@ import xmltodict
 import duallog
 
 
-
-def anropvisveginfo( url, params, filnavn, proxies='', ventetid=0.5): 
+def anropvisveginfo( url, params, filnavn, proxies='', ventetid=15): 
     """
     Anroper visveginfo og har en del feilhåndtering-logikk. Prøver på ny etter en pause ved nettverksfeil eller overbelastning
     """ 
-
+    
     logging.debug( ' '.join( [ 'Skal anrope visveginfo:', url, str(params), filnavn ] ) )  
     count = 0
     sovetid = 0 
     anropeMer = True 
     while count < 4 and anropeMer: 
         count += 1
-        # r = requests.get( url, params) 
-        # svartekst = r.text
+        r = requests.get( url, params=params, proxies=proxies) 
+        svartekst = r.text
         
-        # Debugger ulike svartekst-alternatativ. 
-        svartekst = '<RoadReference></RoadReference>' 
-        
-        if 'RoadReference' in svartekst: 
+        # Tom returverdi = veglenkeposisjon finnes ikke. 
+        # XML-dokument med <RoadReference ... = godkjent
+        # Alt anna = feilmelding fra server (Unavailable etc...) 
+        if '<RoadReference' in svartekst or len( svartekst) == 0: 
             anropeMer = False 
         
-        if count > 1: 
+        if count > 1 and anropeMer: 
             sovetid = sovetid + count * ventetid
-            logging.warning( ' '.join( [ "Visvegionfo-kall FEILET", url, params,  filnavn, 
-                                        "prøver igjen om", str( sovetid), "sekunder" ] ) ) 
-            time.sleep 
+            logging.warning( ' '.join( [ "Visvegionfo-kall FEILET", url, str(params),  filnavn, 'Svar fra Visveginfo:' ] ) )
+            logging.warning( svartekst)  
+            logging.info( ' '.join( [ "prøver igjen om", str( sovetid), "sekunder" ] ) ) 
+            time.sleep( sovetid) 
 
-    return "" 
+    return svartekst
+
+
 
 def visveginfo_veglenkeoppslag( metadata, filnavn='', proxies=''): 
     """
