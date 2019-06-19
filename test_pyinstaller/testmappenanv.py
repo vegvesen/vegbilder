@@ -102,7 +102,7 @@ def hoved( inngangsdata='inngangsdata', out1 ='resultat_utenkonvertering', out2=
 if __name__ == "__main__":
 
     
-    versjonsinfo = "Test tegnsett mappenavn versjon 1.1, 19.06.2019 kl 14"
+    versjonsinfo = "Test tegnsett mappenavn versjon 1.2, 19.06.2019 kl 14:49"
     logdir = 'loggfiler_testmappenavn' 
     logname='testmappenavn_'
     duallog.duallogSetup( logdir=logdir, logname=logname) 
