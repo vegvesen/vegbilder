@@ -139,8 +139,87 @@ def visveginfo_veglenkeoppslag( metadata, filnavn='', proxies=''):
     metadata['vegreferansedato'] = datetime.today().strftime('%Y-%m-%d')      
     metadata['exif_imageproperties'] = exif_imageproperties
     return metadata
+    
+    
+def sjekkretningsendringer( metadata, proxies='' ): 
+    """
+    Sjekker endringer i metreringsretning for ett metadata-element ved hjelp av visveginfo-oppslag
+    Først på bildedato, dernest på dato for den nye vegreferansen (= dagens verdi i alle scenarier jeg kan komme på) 
+    """
+    
+    gammalretning = metreringsretning( metadata['exif_fylke'], metadata['exif_vegkat'], metadata['exif_vegstat'], 
+                                        metadata['exif_vegnr'], metadata['exif_hp'], metadata['exif_meter'], 
+                                        metadata['stedfestingdato'], filnavn, proxies=proxies) 
+    
+    nyretning = metreringsretning( metadata['fylke'], metadata['vegkat'], metadata['vegstat'], 
+                                        metadata['vegnr'], metadata['hp'], metadata['meter'], 
+                                        metadata['vegreferansedato'], filnavn, proxies=proxies) 
+    snuretning == 'Ikke snudd'
+    if gammalretning != nyretning: 
+        snuretning = 'snudd' 
+        
+    return snuretning 
+        
+        
+    
+def metreringsretning( fylke, vegkat, vegstat, vegnr, hp, meter, dato, filnavn, proxies=''): 
 
-def sjekkretning(strekningsdata): 
+    pos0 = retning = motsatt = None 
+
+    fylke = str(int( fylke)).zfill(2) 
+    kommune = '00' 
+    vegnr = str( int( vegnr)).zfill(5)
+    hp = str( int( hp) ).zfill(3)
+    meter1 = str(round( float( meter ))).zfill(5) 
+    
+    vegref1 = fylke + kommune + vegkat + vegstat + vegnr + hp + meter 
+    params = { 'roadReference' : vegref1, 'ViewDate' : dato, 'topologyLevel' : 'Overview' } 
+    
+    svartekst = anropvisveginfo( url, params, filnavn, proxies = proxies) 
+    if 'ArrayOfRoadReference' in svartekst: 
+        vvidata = xmltodict( svartekst) 
+        pos1 = float( vvidata['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
+
+    # En meter bakover
+    if int( meter1) >= 1: 
+        params['roadReference'] = fylke + kommune + vegkat + vegstat + vegnr + hp + str( int( meter1)-1 ).zfill(5) 
+        svar0 = anropvisveginfo( url, params, filnavn, proxies = proxies ) 
+        if 'ArrayOfRoadReference' in svar0: 
+            vvidata0 = xmltodict( svar0) 
+            pos0 = float( vvidata0['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
+        
+    # En meter framover 
+    params['roadReference'] = fylke + kommune + vegkat + vegstat + vegnr + hp + str( int( meter1)+1 ).zfill(5) 
+    svar2 = anropvisveginfo( url, params, filnavn, proxies = proxies ) 
+    if 'ArrayOfRoadReference' in svar2: 
+        vvidata2 = xmltodict( svar2) 
+        pos2 = float( vvidata2['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
+
+    
+    # Antar at metrering følger lenka, for så å evt bli motbevist
+    retning = 'lenkeretning' 
+    if pos0 and pos0 > minpos: 
+        retning = 'motsatt' 
+        
+    if pos2 and pos2 < minpos: 
+        retning = 'motsatt' 
+        
+    # Dårlig integritet i data... 
+    if pos0 and pos2 and pos0 > pos2 and retning != 'motsatt': 
+        logging.warning( ' '.join( [ 'FEIL i metreringsverdier', filnavn  ] ))
+    
+    if not pos0 and not pos2: 
+        logging.warning( ' '.join( [ 'Klarte ikke sjekke metreringsretning:', filnavn, 
+                                    'Hverken forrige eller neste meter-tall ga mening'] ))
+    
+    return retning
+
+
+    
+    
+    
+
+def sjekkretning(strekningsdata, proxies=''): 
     """
     Sjekker om metreringsretning er snudd for denne strekningen
     """
@@ -190,6 +269,11 @@ def sjekkretning(strekningsdata):
         if nyGradient != gammelGradient: 
             retning = 'snudd'
     
+    # Ekstra sjekk hvis det kun er ett bilde i den nye mappenavn
+    if antObjekt == 1: 
+        logging.info( "Kun ett bilde i " + strekningsdata + ", kjører ekstra sjekk for gammel vs ny metreringsretning" ) 
+        retning = sjekkretningsendringer( strekningsdata['filer'][0], proxies=proxies ) 
+        
     return retning
         
 def gradientsjekk( m1, m2): 
@@ -434,7 +518,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     
     for strekning in tempnytt.keys():
         # Sjekker om strekningene skal snus på strekningen relativt til info i EXIF-headeren
-        snuretning = sjekkretning( tempnytt[strekning] ) 
+        snuretning = sjekkretning( tempnytt[strekning], proxies=proxies ) 
         # logging.info( strekning + " " +  snuretning) 
         
         # Tar med oss info om retningen skal snus og komponerer nye streknings (mappe) og filnavn: 
