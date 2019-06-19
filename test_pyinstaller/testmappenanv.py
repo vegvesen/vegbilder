@@ -5,72 +5,61 @@ Spyder Editor
 This is a temporary script file.
 """
 
-import json
+import os
+import locale
 import sys
-import requests 
+import duallog
+import logging
+import pdb
 
-def hoved( proxies, lenker=[ { "url" : "http://example.com", "params" : "" } ]  ): 
-
-    for lenke in lenker: 
-        print( "Henter",  lenke["url"], lenke['params'] ) 
-        # print( '\tUten proxy:') 
-        # r = requests.get( lenke['url'], params=lenke['params'] ) 
-        # if r.ok: 
-            # print( '\t\tSUKSESS') 
-        # else: 
-            # print( '\t\t??? status kode:', r.status_code ) 
+def hoved( inngangsdata='inngangsdata', out1 ='resultat_utenkonvertering', out2='resultat_medkonvertering'  ): 
+    
+    
+    tegnsett = locale.getpreferredencoding() 
+    filsystemtegnsett = sys.getfilesystemencoding()
+    logging.info( 'Tegnsett = ' + tegnsett) 
+    logging.info( 'Filsystem tegnsett = ' + filsystemtegnsett) 
+    
+    logging.info( 'Lager filnavn uten encoding-decoding seremoni' ) 
+    filer = os.listdir( inngangsdata) 
+    
+    for fil in filer: 
+        
+        fname = os.path.join( 'resultat_utenkonvertering', fil) 
+        logging.info( fname ) 
+        
+        with open( fname, 'w') as f: 
+            f.write( 'ASdf' ) 
         
         
-        # print( '\tMed proxy' )
-        r = requests.get( lenke['url'], params=lenke['params'], proxies=proxies ) 
-        if r.ok: 
-            print( '\t\tSUKSESS') 
-        else: 
-            print( '\t\t??? status kode:', r.status_code ) 
+        
+    
+    filer = os.listdir( inngangsdata.encode() ) 
+    
+    for fil in filer: 
+        
+        # pdb.set_trace()
+        fname = os.path.join( 'resultat_medkonvertering', fil.decode( filsystemtegnsett ) )
+        logging.info( fname) 
+        
+        with open( fname, 'w') as f: 
+            f.write( 'Hahahaha' ) 
+        
+    
+
         
 
     
     
 if __name__ == "__main__":
 
-    versjonsinfo = "versjon 1.1, 27.05.2019"
-    print( versjonsinfo ) 
-
-    proxies = None
-    lenker = { "url" : "http://example.com", "params" : ""  }
-
-    if len( sys.argv) > 1: 
-        print( "Test av argumenter til kompilert python-kode (*.exe" ) 
-        inputarg = sys.argv[1]
-        print( "\tArgument 1 (arg1) =", inputarg) 
-   
-
-        # Leser oppsett fra *.json-fil    
-        if '.json' in inputarg[-5:].lower():
-            with open( inputarg) as f: 
-                myjsoninput = json.load( f) 
-
-            print( "Henter argumenter fra angitt .json-fil", inputarg ) 
-
-            if 'proxies' in myjsoninput.keys(): 
-                proxies = myjsoninput['proxies']
-                
-            if 'lenker' in myjsoninput.keys():
-                lenker = myjsoninput['lenker'] 
-                
-           
-        else: 
-            proxies = inputarg
+    
+    versjonsinfo = "Test tegnsett mappenavn versjon 1.0, 19.06.2019"
+    logdir = 'loggfiler_testmappenavn' 
+    logname='testmappenavn_'
+    duallog.duallogSetup( logdir=logdir, logname=logname) 
+    
+    logging.info( versjonsinfo ) 
+    hoved( ) 
  
-                        
-        # Klar til å kjøre funksjon
-        print( "Kjører funksjon hoved( proxies=", proxies) 
-        hoved( proxies, lenker = lenker ) 
-        
-       
-    else: 
-        
-        print( "Du må oppgi filnavn på oppsettfil (*.json)")
- 
-
-    print( versjonsinfo ) 
+    logging.info( versjonsinfo ) 
