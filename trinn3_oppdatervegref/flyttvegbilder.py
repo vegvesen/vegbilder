@@ -141,11 +141,13 @@ def visveginfo_veglenkeoppslag( metadata, filnavn='', proxies=''):
     return metadata
     
     
-def sjekkretningsendringer( metadata, proxies='' ): 
+def sjekkretningsendringer( metadata, strekningsnavn, proxies='' ): 
     """
     Sjekker endringer i metreringsretning for ett metadata-element ved hjelp av visveginfo-oppslag
     Først på bildedato, dernest på dato for den nye vegreferansen (= dagens verdi i alle scenarier jeg kan komme på) 
     """
+    
+    filnavn = '/'.join( [ strekningsnavn, metadata['filnavn'] ]) 
     
     gammalretning = metreringsretning( metadata['exif_fylke'], metadata['exif_vegkat'], metadata['exif_vegstat'], 
                                         metadata['exif_vegnr'], metadata['exif_hp'], metadata['exif_meter'], 
@@ -154,7 +156,7 @@ def sjekkretningsendringer( metadata, proxies='' ):
     nyretning = metreringsretning( metadata['fylke'], metadata['vegkat'], metadata['vegstat'], 
                                         metadata['vegnr'], metadata['hp'], metadata['meter'], 
                                         metadata['vegreferansedato'], filnavn, proxies=proxies) 
-    snuretning == 'Ikke snudd'
+    snuretning = 'Ikke snudd'
     if gammalretning != nyretning: 
         snuretning = 'snudd' 
         
@@ -165,6 +167,7 @@ def sjekkretningsendringer( metadata, proxies='' ):
 def metreringsretning( fylke, vegkat, vegstat, vegnr, hp, meter, dato, filnavn, proxies=''): 
 
     pos0 = retning = motsatt = None 
+    url = 'http://visveginfo-static.opentns.org/RoadInfoService3d/GetRoadReferenceForReference' 
 
     fylke = str(int( fylke)).zfill(2) 
     kommune = '00' 
@@ -172,27 +175,27 @@ def metreringsretning( fylke, vegkat, vegstat, vegnr, hp, meter, dato, filnavn, 
     hp = str( int( hp) ).zfill(3)
     meter1 = str(round( float( meter ))).zfill(5) 
     
-    vegref1 = fylke + kommune + vegkat + vegstat + vegnr + hp + meter 
+    vegref1 = fylke + kommune + vegkat + vegstat + vegnr + hp + meter1
     params = { 'roadReference' : vegref1, 'ViewDate' : dato, 'topologyLevel' : 'Overview' } 
     
     svartekst = anropvisveginfo( url, params, filnavn, proxies = proxies) 
     if 'ArrayOfRoadReference' in svartekst: 
-        vvidata = xmltodict( svartekst) 
-        pos1 = float( vvidata['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
+        vvidata = xmltodict.parse( svartekst) 
+        minpos = float( vvidata['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
 
     # En meter bakover
     if int( meter1) >= 1: 
         params['roadReference'] = fylke + kommune + vegkat + vegstat + vegnr + hp + str( int( meter1)-1 ).zfill(5) 
         svar0 = anropvisveginfo( url, params, filnavn, proxies = proxies ) 
         if 'ArrayOfRoadReference' in svar0: 
-            vvidata0 = xmltodict( svar0) 
+            vvidata0 = xmltodict.parse( svar0) 
             pos0 = float( vvidata0['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
         
     # En meter framover 
     params['roadReference'] = fylke + kommune + vegkat + vegstat + vegnr + hp + str( int( meter1)+1 ).zfill(5) 
     svar2 = anropvisveginfo( url, params, filnavn, proxies = proxies ) 
     if 'ArrayOfRoadReference' in svar2: 
-        vvidata2 = xmltodict( svar2) 
+        vvidata2 = xmltodict.parse( svar2) 
         pos2 = float( vvidata2['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
 
     
@@ -271,8 +274,8 @@ def sjekkretning(strekningsdata, proxies=''):
     
     # Ekstra sjekk hvis det kun er ett bilde i den nye mappenavn
     if antObjekt == 1: 
-        logging.info( "Kun ett bilde i " + strekningsdata + ", kjører ekstra sjekk for gammel vs ny metreringsretning" ) 
-        retning = sjekkretningsendringer( strekningsdata['filer'][0], proxies=proxies ) 
+        logging.info( "Kun ett bilde i " + strekningsdata['strekningsnavn'] + ", kjører ekstra sjekk for gammel vs ny metreringsretning" ) 
+        retning = sjekkretningsendringer( strekningsdata['filer'][0], strekningsdata['strekningsnavn'], proxies=proxies ) 
         
     return retning
         
@@ -781,7 +784,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 3.2 den 18. Juni 2019 kl 1046"
+    versjoninfo = "Flyttvegbilder Versjon 3.4 den 19. Juni 2019 kl 2304"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
