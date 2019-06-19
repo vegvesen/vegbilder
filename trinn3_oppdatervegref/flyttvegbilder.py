@@ -675,7 +675,7 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
         for bilde in jsonfiler: 
             fname = os.path.join( mappe, bilde)
             try:
-                with open( fname ) as f:
+                with open( fname, encoding='utf-8' ) as f:
                     metadata = json.load( f) 
 
             except UnicodeDecodeError as myErr: 
@@ -784,7 +784,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 3.4 den 19. Juni 2019 kl 2304"
+    versjoninfo = "Flyttvegbilder Versjon 3.5 den 20. Juni 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
