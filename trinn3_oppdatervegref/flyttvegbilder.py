@@ -77,7 +77,7 @@ def visveginfo_veglenkeoppslag( metadata, filnavn='', proxies=''):
         
         url = 'http://visveginfo-static.opentns.org/RoadInfoService/GetRoadReferenceForNVDBReference' 
         tekstrespons = anropvisveginfo( url, params, filnavn, proxies=proxies )
-        if len( tekstrespons) > 0: 
+        if 'RoadPointReference' in tekstrespons: 
             try: 
                 vvidata = xmltodict.parse( tekstrespons )
             except ExpatError as myErr:
@@ -151,7 +151,7 @@ def sjekkretningsendringer( metadata, strekningsnavn, proxies='' ):
     
     gammalretning = metreringsretning( metadata['exif_fylke'], metadata['exif_vegkat'], metadata['exif_vegstat'], 
                                         metadata['exif_vegnr'], metadata['exif_hp'], metadata['exif_meter'], 
-                                        metadata['stedfestingdato'], filnavn, proxies=proxies) 
+                                        metadata['exif_dato'], filnavn, proxies=proxies) 
     
     nyretning = metreringsretning( metadata['fylke'], metadata['vegkat'], metadata['vegstat'], 
                                         metadata['vegnr'], metadata['hp'], metadata['meter'], 
@@ -784,7 +784,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 3.5 den 20. Juni 2019"
+    versjoninfo = "Flyttvegbilder Versjon 3.6 den 20. Juni 2019 kl 10:15"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
@@ -833,6 +833,10 @@ if __name__ == "__main__":
             
     if not gammeltdir or not nyttdir: 
         print( "STOPP - kan ikke prosessere uten at du angir mappenavn for der bildene finnes og dit oppdatert stedfesting kan skrives") 
+        if not gammeltdir: 
+            print( "Mangler parameter orginalmappe") 
+        if not nyttdir: 
+            print( "Mangler parameter nymappe" ) 
     else: 
         duallog.duallogSetup( logdir=logdir, logname=logname) 
         logging.info( versjoninfo ) 
