@@ -332,28 +332,50 @@ def sjekkfelt( metadata, snuretning='Ikke snudd'):
         
     return metadata
         
-def plukkstedsnavn( hpnavn, ukjent=''): 
+def plukkstedsnavn( hpnavn, ukjent='', fjernraretegn=True): 
     """
     Plukker ut stedsnavn-komponenten av navnet hp05_Granåsen eller hp50_X_Ditt_Fv309_datt
     
     Nøkkelord ukjent='' kan detaljstyre hva som er returverdi hvis vi ikke har noe stedsnavn 
     """ 
-    
+    junk = ''
+   
     stedsnavn = '_'.join( hpnavn.split( '_')[1:] ) 
-    
+     
     if not stedsnavn: 
         stedsnavn = ukjent
+    if fjernraretegn: 
+        (stedsnavn, raretegn) = slettraretegn( stedsnavn) 
+    else: 
+        (junk, raretegn) = slettraretegn( stedsnavn)
         
-    return stedsnavn 
+     
+    return (stedsnavn, raretegn)
     
-
-
-def lag_strekningsnavn( metadata): 
+def slettraretegn( tekst): 
     """
-    Komponerer nytt strekningsnavn og filnavn, og returnerer tuple (strekningsnavn, filnavn, stedsnavn) 
+    Fjerner rester av tegnsett-rot fra tekst
+    """
+
+    tekst = re.sub( r'ÃƒËœ', 'Æ', tekst ) 
+    
+    allowedchars = '[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅæøå._-]'
+    disallow     =  '[0123456789abcdefghijklmnopqrstuvwxyzÆØÅæøåABCDEFGHIJKLMNOPQRSTUVWXYZ._-]'
+    merkelig = re.sub( disallow, '', tekst ) 
+    tekst = re.sub( allowedchars, '_', tekst) 
+    tekst = re.sub( ' ', '_', tekst) 
+    tekst = re.sub( r'_{1,}', '_', tekst) 
+   
+    
+    return (tekst, merkelig) 
+
+def lag_strekningsnavn( metadata, fjernraretegn=True): 
+    """
+    Komponerer nytt strekningsnavn og filnavn, og returnerer tuple (strekningsnavn, filnavn, stedsnavn, raretegn) 
     
     Modifiserer IKKE metadata
     """ 
+    raretegn = ''
     
     if 'ny_visveginfosuksess' in metadata.keys() and metadata['ny_visveginfosuksess']:
     
@@ -369,7 +391,7 @@ def lag_strekningsnavn( metadata):
         # Deler opp navn av typen 06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm 
         # og plukker ut navne-biten av 
         hpbit = metadata['exif_strekningreferanse'].split('/')[1]
-        stedsnavn = plukkstedsnavn( hpbit ) 
+        (stedsnavn, raretegn) = plukkstedsnavn( hpbit, fjernraretegn=fjernraretegn ) 
 
         vegnr = metadata['vegkat'].upper() + metadata['vegstat'].lower() + \
                     str( metadata['vegnr'] ) 
@@ -413,7 +435,7 @@ def lag_strekningsnavn( metadata):
                 
         stedsnavn = '' # Stedsnavn står allerede i gammelt filnavn, trenger ikke føye det til 2 ganger
                 
-    return (nystrekning, nyttfilnavn, stedsnavn) 
+    return (nystrekning, nyttfilnavn, stedsnavn, raretegn) 
     
 def mypathsplit( filnavn, antallbiter): 
     """
@@ -453,7 +475,8 @@ def uniktstedsnavn( mydict, stedsnavn):
     
    
 def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm',  
-                nyttdir='../bilder/testflytting/test1_Ev134', proxies='', stabildato='1949-31-12'): 
+                nyttdir='../bilder/testflytting/test1_Ev134', proxies='', 
+                stabildato='1949-31-12', fjernraretegn=True ): 
     
     """
     Kopierer bilder (*.jpg) og metadata (*.webp, *.json) over til mappe- og filnavn som er riktig etter 
@@ -484,20 +507,24 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     # hp-elementene for '06_Ev134' så kan vi gjenbruke navnet. 
 
     hpnavn = { } 
-    
+    mineraretegn = set() 
     gammelcount = 0 
     for strekning in gammelt.keys():
         for fil in gammelt[strekning]['filer']: 
             
             gammelcount += 1
             if fil['ny_visveginfosuksess']: 
-                (nytt_strekningsnavn, junk, stedsnavn)  = lag_strekningsnavn( fil) 
+                (nytt_strekningsnavn, junk, stedsnavn, raretegn)  = lag_strekningsnavn( fil, fjernraretegn=fjernraretegn) 
                 
             else: # Mangler stefesting = historiske data
                 (rot, hpmappenavn, feltmappenavn) = mypathsplit( strekning, 2) 
-                stedsnavn =  plukkstedsnavn( hpmappenavn )  
+                (stedsnavn, raretegn) = plukkstedsnavn( hpmappenavn, fjernraretegn=fjernraretegn )  
                 nytt_strekningsnavn = '/'.join( [ rot, 'HISTORISK-'+hpmappenavn, feltmappenavn ] )
-                
+            
+            if raretegn and raretegn not in mineraretegn: 
+                mineraretegn.add( raretegn) 
+                logging.error( 'Fant snåle tegn: ' + raretegn + ' i mappe ' + strekning + ' exif mappenavn: ' + fil['exif_mappenavn'] ) 
+             
             if not nytt_strekningsnavn in tempnytt.keys():
                 tempnytt[nytt_strekningsnavn] = { 'strekningsnavn' : nytt_strekningsnavn, 'filer' : [] }
             
@@ -528,7 +555,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
         for fil in tempnytt[strekning]['filer']: 
             tempcount += 1
             meta = deepcopy( sjekkfelt( fil, snuretning=snuretning) )
-            (nystrekning, nyttfilnavn, stedsnavn) = lag_strekningsnavn( meta) 
+            (nystrekning, nyttfilnavn, stedsnavn, raretegn) = lag_strekningsnavn( meta, fjernraretegn=fjernraretegn) 
             
             # Føyer til stedsnavn hvis vi har et og det er unikt: 
             (rot, hp, felt) = mypathsplit( nystrekning, 2) 
@@ -778,13 +805,14 @@ if __name__ == "__main__":
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
     eldstedato = '1949-31-12'
     stabildato = eldstedato
+    fjernraretegn = True
 
 
     # flyttfiler(gammeltdir='vegbilder/testbilder_prosessert/orginal_stedfesting', 
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 3.6 den 20. Juni 2019 kl 10:15"
+    versjoninfo = "Flyttvegbilder Versjon 3.7 den 20. Juni 2019 kl 20:34"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
@@ -818,6 +846,8 @@ if __name__ == "__main__":
             if 'stabildato' in oppsett.keys():
                 stabildato = oppsett['stabildato']            
 
+            if 'fjernraretegn' in oppsett.keys():
+                fjernraretegn = oppsett['fjernraretegn']            
                 
         else: 
             gammeltdir = sys.argv[1]
@@ -853,6 +883,6 @@ if __name__ == "__main__":
             
         for idx, enmappe in enumerate( gammeltdir): 
             logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(gammeltdir)) ] ) ) 
-            flyttfiler( gammeltdir=enmappe, nyttdir=nyttdir, proxies=proxies, stabildato=stabildato) 
+            flyttfiler( gammeltdir=enmappe, nyttdir=nyttdir, proxies=proxies, stabildato=stabildato, fjernraretegn=fjernraretegn) 
         logging.info( "FERDIG" + versjoninfo ) 
     
