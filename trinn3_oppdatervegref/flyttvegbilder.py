@@ -147,7 +147,7 @@ def sjekkretningsendringer( metadata, strekningsnavn, proxies='' ):
     Først på bildedato, dernest på dato for den nye vegreferansen (= dagens verdi i alle scenarier jeg kan komme på) 
     """
     
-    if filnavn in metadata.keys():
+    if 'filnavn' in metadata.keys():
         filnavn = '/'.join( [ strekningsnavn, metadata['filnavn'] ]) 
     else: 
         filnavn = '/'.join( [ strekningsnavn, metadata['exif_filnavn'] ]) 
@@ -817,7 +817,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 3.8 den 21. Juni 2019 kl 07:34"
+    versjoninfo = "Flyttvegbilder Versjon 3.9 den 21. Juni 2019 kl 07:57"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
