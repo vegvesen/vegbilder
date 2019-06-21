@@ -147,7 +147,12 @@ def sjekkretningsendringer( metadata, strekningsnavn, proxies='' ):
     Først på bildedato, dernest på dato for den nye vegreferansen (= dagens verdi i alle scenarier jeg kan komme på) 
     """
     
-    filnavn = '/'.join( [ strekningsnavn, metadata['filnavn'] ]) 
+    if filnavn in metadata.keys():
+        filnavn = '/'.join( [ strekningsnavn, metadata['filnavn'] ]) 
+    else: 
+        filnavn = '/'.join( [ strekningsnavn, metadata['exif_filnavn'] ]) 
+        logging.warning( 'Ikke noe filnavn-element i JSON-fil ' + strekningsnavn + ' gammelt filnavn ' + filnavn ) 
+    
     
     gammalretning = metreringsretning( metadata['exif_fylke'], metadata['exif_vegkat'], metadata['exif_vegstat'], 
                                         metadata['exif_vegnr'], metadata['exif_hp'], metadata['exif_meter'], 
@@ -812,7 +817,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 3.7 den 20. Juni 2019 kl 20:34"
+    versjoninfo = "Flyttvegbilder Versjon 3.8 den 21. Juni 2019 kl 07:34"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
