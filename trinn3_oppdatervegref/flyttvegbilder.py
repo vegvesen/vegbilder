@@ -47,7 +47,7 @@ def anropvisveginfo( url, params, filnavn, proxies='', ventetid=15):
         # Tom returverdi = veglenkeposisjon finnes ikke. 
         # XML-dokument med <RoadReference ... = godkjent
         # Alt anna = feilmelding fra server (Unavailable etc...) 
-        if '<RoadReference' in svartekst or len( svartekst) == 0: 
+        if 'RoadReference' in svartekst or len( svartekst) == 0: 
             anropeMer = False 
         
         if count > 1 and anropeMer: 
@@ -162,7 +162,7 @@ def sjekkretningsendringer( metadata, strekningsnavn, proxies='' ):
                                         metadata['vegnr'], metadata['hp'], metadata['meter'], 
                                         metadata['vegreferansedato'], filnavn, proxies=proxies) 
     snuretning = 'Ikke snudd'
-    if gammalretning != nyretning: 
+    if gammalretning and nyretning and gammalretning != nyretning: 
         snuretning = 'snudd' 
         
     return snuretning 
@@ -171,7 +171,7 @@ def sjekkretningsendringer( metadata, strekningsnavn, proxies='' ):
     
 def metreringsretning( fylke, vegkat, vegstat, vegnr, hp, meter, dato, filnavn, proxies=''): 
 
-    pos0 = retning = motsatt = None 
+    pos0 = pos2 = minpos = retning = motsatt = None 
     url = 'http://visveginfo-static.opentns.org/RoadInfoService3d/GetRoadReferenceForReference' 
 
     fylke = str(int( fylke)).zfill(2) 
@@ -184,22 +184,26 @@ def metreringsretning( fylke, vegkat, vegstat, vegnr, hp, meter, dato, filnavn, 
     params = { 'roadReference' : vegref1, 'ViewDate' : dato, 'topologyLevel' : 'Overview' } 
     
     svartekst = anropvisveginfo( url, params, filnavn, proxies = proxies) 
-    if 'ArrayOfRoadReference' in svartekst: 
+    if '<RoadReference' in svartekst: 
         vvidata = xmltodict.parse( svartekst) 
         minpos = float( vvidata['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
+    else: 
+        logging.warning( "Sjekk metreringsretning for enkelt bilde: Vegreferanseoppslag FEILER: " + filnavn + " " + str( params )  ) 
+        return None 
+
 
     # En meter bakover
     if int( meter1) >= 1: 
         params['roadReference'] = fylke + kommune + vegkat + vegstat + vegnr + hp + str( int( meter1)-1 ).zfill(5) 
         svar0 = anropvisveginfo( url, params, filnavn, proxies = proxies ) 
-        if 'ArrayOfRoadReference' in svar0: 
+        if '<RoadReference' in svar0: 
             vvidata0 = xmltodict.parse( svar0) 
             pos0 = float( vvidata0['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
         
     # En meter framover 
     params['roadReference'] = fylke + kommune + vegkat + vegstat + vegnr + hp + str( int( meter1)+1 ).zfill(5) 
     svar2 = anropvisveginfo( url, params, filnavn, proxies = proxies ) 
-    if 'ArrayOfRoadReference' in svar2: 
+    if '<RoadReference' in svar2: 
         vvidata2 = xmltodict.parse( svar2) 
         pos2 = float( vvidata2['ArrayOfRoadReference']['RoadReference']['Measure'] ) 
 
@@ -817,7 +821,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 3.9 den 21. Juni 2019 kl 07:57"
+    versjoninfo = "Flyttvegbilder Versjon 4.0 den 27. Juni 2019 kl 13:10"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
