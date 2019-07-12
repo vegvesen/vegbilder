@@ -61,6 +61,37 @@ def recursive_findfiles(which, where='.'):
     return filnavn
 
 
+def anropvisveginfo( url, params, filnavn, proxies='', ventetid=15): 
+    """
+    Anroper visveginfo og har en del feilhåndtering-logikk. Prøver på ny etter en pause ved nettverksfeil eller overbelastning
+    """ 
+    
+    logging.debug( ' '.join( [ 'Skal anrope visveginfo:', url, str(params), filnavn ] ) )  
+    count = 0
+    sovetid = 0 
+    anropeMer = True 
+    while count < 4 and anropeMer: 
+        count += 1
+        r = requests.get( url, params=params, proxies=proxies) 
+        logging.debug( r.url + ' status kode: ' + str( r.status_code ))
+        svartekst = r.text
+        
+        # Tom returverdi = veglenkeposisjon finnes ikke. 
+        # XML-dokument med <RoadReference ... = godkjent
+        # Alt anna = feilmelding fra server (Unavailable etc...) 
+        if 'RoadReference' in svartekst or len( svartekst) == 0: 
+            anropeMer = False 
+        
+        if count > 1 and anropeMer: 
+            sovetid = sovetid + count * ventetid
+            logging.warning( ' '.join( [ "Visvegionfo-kall FEILET", url, str(params),  filnavn, 'Svar fra Visveginfo:' ] ) )
+            logging.warning( svartekst)  
+            logging.info( ' '.join( [ "prøver igjen om", str( sovetid), "sekunder" ] ) ) 
+            time.sleep( sovetid) 
+
+    return svartekst
+
+
 def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''): 
     """
     Mottar et metadata-element, fisker ut det som trengs for å gjøre oppslag på vegreferanse,
@@ -79,16 +110,15 @@ def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''):
     params = { 'roadReference' : vegref, 'ViewDate' : metadata['exif_dato'], 'topologyLevel' : 'Overview' } 
     
     url = 'http://visveginfo-static.opentns.org/RoadInfoService3d/GetRoadReferenceForReference' 
-    if proxies: 
-        r = requests.get( url, params=params, proxies=proxies)
-    else: 
-        r = requests.get( url, params=params ) 
-    tekstrespons = r.text
+
+    tekstrespons = anropvisveginfo( url, params, filnavn, proxies=proxies ) 
     try: 
         vvidata = xmltodict.parse( tekstrespons )
     except ExpatError as e: 
         logging.warning( ' '.join( [ 'XML parsing av visveginfo-resultat feiler', 
                         filnavn, str(e), tekstrespons ] ) )
+
+    
 
     
     # Putter viatech XML sist... 
