@@ -92,6 +92,7 @@ def anropvisveginfo( url, params, filnavn, proxies='', ventetid=15):
     return svartekst
 
 
+
 def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''): 
     """
     Mottar et metadata-element, fisker ut det som trengs for å gjøre oppslag på vegreferanse,
@@ -174,19 +175,23 @@ def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''):
 
     return metadata
 
-def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfesting=False, proxies=None ):
-    t0 = datetime.now()
-    jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
+
+def lesjsonfil( filnavn): 
+    """
+    Åpner og leser JSON-fil. Tolererer nettverksfeil og tar en pause før vi prøver på ny (inntil 4 ganger
+    """ 
+    
+    meta = None 
     count = 0
-    count_suksess = 0 
-    count_fatalt = 0 
- 
-    for (nummer, filnavn) in enumerate(jsonfiler): 
-        meta = None
+    sovetid = 0 
+    anropeMer = True 
+    maxTries = 4
+    while count < maxTries and anropeMer: 
+        count += 1
+    
         try: 
             with open( filnavn ) as f: 
                 meta = json.load(f)    
-     
             
         except UnicodeDecodeError as myErr: 
             logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) ) 
@@ -199,10 +204,64 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
             except UnicodeDecodeError as myErr2:
                 logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
                 meta = None
-                      
+                anropeMer = False
+        
         except OSError as myErr: 
-            logging.warning( ' '.join( [  "Kan ikke lese inn JSON-fil", filnavn, str(myErr) ] ) ) 
-            meta = None
+            sovetid = sovetid + count * ventetid
+            
+            if count < maxTries: 
+                logging.error( "Lesing av JSON-fil feilet, " + filnavn + " prøver på ny om " + str( sovetid) + " sekunder" ) 
+                time.sleep( sovetid) 
+            else: 
+                logging.error( "Lesing av JSON-fil FEILET " + filnavn + ", gir opp og går videre"   ) 
+                logging.error( str( myErr) ) 
+                meta = None
+
+ 
+        else: 
+            anropeMer = False
+        
+     
+
+    return meta 
+
+def skrivjsonfil( filnavn, data, ventetid=15): 
+    """
+    Skriver dict til json-fil. Tolererer nettverksfeil og tar en pause før vi prøver på ny (inntil 4 ganger)
+    """ 
+    
+    count = 0
+    sovetid = 0 
+    anropeMer = True 
+    maxTries = 4
+    while count < maxTries and anropeMer: 
+        count += 1
+
+        try: 
+            with open( filnavn, 'w', encoding='utf-8') as fw: 
+                json.dump( data, fw, ensure_ascii=False, indent=4) 
+        except OSError: 
+            sovetid = sovetid + count * ventetid
+            
+            if count < maxTries: 
+                logging.error( "Skriving til fil FEILET " + filnavn + " prøver på ny om " + str( sovetid) + " sekunder" ) 
+                time.sleep( sovetid) 
+            else: 
+                logging.error( "Skriving til fil FEILET " + filnavn + ", gir opp og går videre"  ) 
+ 
+        else: 
+            anropeMer = False
+
+
+def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfesting=False, proxies=None ):
+    t0 = datetime.now()
+    jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
+    count = 0
+    count_suksess = 0 
+    count_fatalt = 0 
+ 
+    for (nummer, filnavn) in enumerate(jsonfiler): 
+        meta = lesjsonfil( filnavn) 
 
         if meta: 
             # Stedfester kun dem som ikke er stedfestet fra før: 
@@ -221,9 +280,8 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                 
                     if meta['stedfestet'] == 'JA' : 
                         count_suksess += 1
-                      
-                    with open( filnavn, 'w', encoding='utf-8') as fw: 
-                        json.dump( meta, fw, ensure_ascii=False, indent=4) 
+                    
+                    skrivjsonfil( filnavn, meta) 
                     
             if nummer == 10 or nummer == 100 or nummer % 500 == 0: 
                 dt = datetime.now() - t0 
