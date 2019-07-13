@@ -641,14 +641,27 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             nymappe = Path( nymappenavn ) 
             nymappe.mkdir( parents=True, exist_ok=True)
             
-            try: 
-                copyfile( gammelfil + '.jpg', skrivnyfil + '.jpg' ) 
-            except FileNotFoundError: 
-                logging.error( 'Fant ikke JPG-fil:' + gammelfil+'.jpg') 
-
-            try: 
-                copyfile( gammelfil + '.webp', skrivnyfil + '.webp' ) 
-            except FileNotFoundError: 
+            # Kopierer bildefil
+            junk = kopierfil( gammelfil + '.jpg', skrivnyfil + '.jpg' ) 
+            
+            # Kopierer webp-fil -- hvis den finnes 
+            # Prøver å kontroller for nettverksbrudd ved samtidig å sjekke om 
+            # bildefilen finnes (det er ikke alltid vi har webp-fil) 
+            # Hvis vi IKKE finner bildefilen har vi nettverksbrudd og 
+            # prøver å flytte webp-filen. 
+            # Statistikken count_manglerwebpfil vil bli 1 element for lite hvis vi 
+            # har spesialtilfellet at webp - fila mangler og vi har nettverksbrudd 
+            # akkurat i det bildePath.exists()-sjekken foretas. 
+            # Det er imidlertid andre skriveoperasjoner som tar MYE mer tid enn dette, 
+            # så sjangsen for at akkurat denne operasjonen er det som påtreffer nettverksbrudd
+            # er ganske liten... 
+            webpPath =  Path( gammelfil + '.webp' ) 
+            bildePath = Path( gammelfil + '.jpg' ) 
+            
+            
+            if webpPath.exists() or not bildePath.exists(): 
+                kopierfil( gammelfil + '.webp', skrivnyfil + '.webp' ) 
+            else: 
                 count_manglerwebpfil += 1
             
             # Flytter exif-XML helt nederst i strukturen 
@@ -657,9 +670,8 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             
             # Fjerner flagget 
             junk = meta.pop( 'ny_visveginfosuksess' )
-
-            with open( skrivnyfil + '.json', 'w', encoding='utf-8') as f: 
-                json.dump( meta, f, indent=4, ensure_ascii=False) 
+                
+            skrivjsonfil( skrivnyfil + '.json', meta) 
 
     if count_manglerwebpfil > 0: 
         logging.warning( "Mangler " + str(count_manglerwebpfil) + " webp-filer"  ) 
@@ -669,6 +681,62 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     
                 
     # pdb.set_trace()
+
+def kopierfil( gammelfil, nyfil, ventetid=15): 
+    """
+    Filkopiering som er tolererer nettverksfeil og tar en pause før vi prøver på ny (inntil 4 ganger)
+    """ 
+    
+    count = 0
+    sovetid = 0 
+    anropeMer = True 
+    maxTries = 4
+    while count < maxTries and anropeMer: 
+        count += 1
+
+        try: 
+            copyfile( gammelfil, nyfil )  
+        except OSError as myErr: 
+            sovetid = sovetid + count * ventetid
+            
+            if count < maxTries: 
+                logging.error( "Skriving til fil FEILET " + filnavn + " prøver på ny om " + str( sovetid) + " sekunder" ) 
+                time.sleep( sovetid) 
+            else: 
+                logging.error( "Skriving til fil FEILET " + filnavn + ", gir opp og går videre"  ) 
+                logging.error( str(myErr)) 
+ 
+        else: 
+            anropeMer = False
+    
+
+def skrivjsonfil( filnavn, data, ventetid=15): 
+    """
+    Skriver dict til json-fil. Tolererer nettverksfeil og tar en pause før vi prøver på ny (inntil 4 ganger)
+    """ 
+    
+    count = 0
+    sovetid = 0 
+    anropeMer = True 
+    maxTries = 4
+    while count < maxTries and anropeMer: 
+        count += 1
+
+        try: 
+            with open( filnavn, 'w', encoding='utf-8') as fw: 
+                json.dump( data, fw, ensure_ascii=False, indent=4) 
+        except OSError as myErr: 
+            sovetid = sovetid + count * ventetid
+            
+            if count < maxTries: 
+                logging.error( "Skriving til fil FEILET " + filnavn + " prøver på ny om " + str( sovetid) + " sekunder" ) 
+                time.sleep( sovetid) 
+            else: 
+                logging.error( "Skriving til fil FEILET " + filnavn + ", gir opp og går videre"  ) 
+                logging.error( str(myErr)) 
+ 
+        else: 
+            anropeMer = False
 
 def sjekkdato( nyeste, eldste): 
     """
@@ -683,6 +751,57 @@ def sjekkdato( nyeste, eldste):
         return True
     else: 
         return False
+
+
+def lesjsonfil( filnavn, ventetid=15): 
+    """
+    Åpner og leser JSON-fil. Tolererer nettverksfeil og tar en pause før vi prøver på ny (inntil 4 ganger
+    """ 
+    
+    meta = None 
+    count = 0
+    sovetid = 0 
+    anropeMer = True 
+    maxTries = 4
+    while count < maxTries and anropeMer: 
+        count += 1
+    
+        try: 
+            with open( filnavn ) as f: 
+                meta = json.load(f)    
+            
+        except UnicodeDecodeError as myErr: 
+            logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) ) 
+        
+            try: 
+                with open( fname, encoding='latin-1') as f: 
+                    text = f.read()
+                    textUtf8 = text.encode('utf-8') 
+                    meta = json.loads( textUtf8) 
+            except UnicodeDecodeError as myErr2:
+                logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
+                meta = None
+                anropeMer = False
+        
+        except OSError as myErr: 
+            sovetid = sovetid + count * ventetid
+            
+            if count < maxTries: 
+                logging.error( "Lesing av JSON-fil feilet, " + filnavn + " prøver på ny om " + str( sovetid) + " sekunder" ) 
+                time.sleep( sovetid) 
+            else: 
+                logging.error( "Lesing av JSON-fil FEILET " + filnavn + ", gir opp og går videre"   ) 
+                logging.error( str( myErr) ) 
+                meta = None
+
+ 
+        else: 
+            anropeMer = False
+        
+     
+
+    return meta 
+
 
 
 def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm', 
@@ -710,23 +829,8 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
         count = 0 # Debug, mindre datasett
         for bilde in jsonfiler: 
             fname = os.path.join( mappe, bilde)
-            try:
-                with open( fname, encoding='utf-8' ) as f:
-                    metadata = json.load( f) 
-
-            except UnicodeDecodeError as myErr: 
-                logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) )  
-                
-                try: 
-                    with open( fname, encoding='latin-1') as f: 
-                        text = f.read()
-                    textUtf8 = text.encode('utf-8') 
-                    metadata = json.loads( textUtf8) 
-                except UnicodeDecodeError as myErr2:
-                    logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
-
-            except OSError as myErr: 
-                logging.warning( ' '.join( [  "Kan ikke lese inn JSON-fil", fname, str(myErr) ] ) ) 
+            
+            metadata = lesjsonfil( fname) 
                 
             if metadata: 
                 
@@ -782,8 +886,6 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
     return oversikt
             
         
-        
-        
 def findfiles(which, where='.'):
     '''
     Returns list of filenames from `where` path matched by 'which'
@@ -821,7 +923,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.0 den 27. Juni 2019 kl 13:10"
+    versjoninfo = "Flyttvegbilder Versjon 4.0 den 13. Juli 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
