@@ -366,6 +366,8 @@ def slettraretegn( tekst):
     Fjerner rester av tegnsett-rot fra tekst
     """
 
+    
+    tekst = re.sub( r'Ã¥', 'å', tekst ) 
     tekst = re.sub( r'ÃƒËœ', 'Æ', tekst ) 
     
     allowedchars = '[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅæøå._-]'
@@ -374,7 +376,6 @@ def slettraretegn( tekst):
     tekst = re.sub( allowedchars, '_', tekst) 
     tekst = re.sub( ' ', '_', tekst) 
     tekst = re.sub( r'_{1,}', '_', tekst) 
-   
     
     return (tekst, merkelig) 
 
@@ -658,7 +659,8 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             webpPath =  Path( gammelfil + '.webp' ) 
             bildePath = Path( gammelfil + '.jpg' ) 
             
-            
+            logging.info( "Venter litt, så du kan simulere nettverksbrudd") 
+            time.sleep(5)
             if webpPath.exists() or not bildePath.exists(): 
                 kopierfil( gammelfil + '.webp', skrivnyfil + '.webp' ) 
             else: 
