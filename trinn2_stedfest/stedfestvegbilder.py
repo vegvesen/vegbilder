@@ -176,7 +176,7 @@ def visveginfo_vegreferanseoppslag( metadata, proxies=None, filnavn=''):
     return metadata
 
 
-def lesjsonfil( filnavn): 
+def lesjsonfil( filnavn, ventetid=15): 
     """
     Åpner og leser JSON-fil. Tolererer nettverksfeil og tar en pause før vi prøver på ny (inntil 4 ganger
     """ 
@@ -240,7 +240,7 @@ def skrivjsonfil( filnavn, data, ventetid=15):
         try: 
             with open( filnavn, 'w', encoding='utf-8') as fw: 
                 json.dump( data, fw, ensure_ascii=False, indent=4) 
-        except OSError: 
+        except OSError as myErr: 
             sovetid = sovetid + count * ventetid
             
             if count < maxTries: 
@@ -248,6 +248,7 @@ def skrivjsonfil( filnavn, data, ventetid=15):
                 time.sleep( sovetid) 
             else: 
                 logging.error( "Skriving til fil FEILET " + filnavn + ", gir opp og går videre"  ) 
+                logging.error( str(myErr)) 
  
         else: 
             anropeMer = False
