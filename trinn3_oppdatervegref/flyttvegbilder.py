@@ -643,7 +643,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             nymappe.mkdir( parents=True, exist_ok=True)
             
             # Kopierer bildefil
-            junk = kopierfil( gammelfil + '.jpg', skrivnyfil + '.jpg' ) 
+            kopierfil( gammelfil + '.jpg', skrivnyfil + '.jpg' ) 
             
             # Kopierer webp-fil -- hvis den finnes 
             # Prøver å kontroller for nettverksbrudd ved samtidig å sjekke om 
@@ -659,8 +659,6 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             webpPath =  Path( gammelfil + '.webp' ) 
             bildePath = Path( gammelfil + '.jpg' ) 
             
-            logging.info( "Venter litt, så du kan simulere nettverksbrudd") 
-            time.sleep(5)
             if webpPath.exists() or not bildePath.exists(): 
                 kopierfil( gammelfil + '.webp', skrivnyfil + '.webp' ) 
             else: 
@@ -672,6 +670,9 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             
             # Fjerner flagget 
             junk = meta.pop( 'ny_visveginfosuksess' )
+
+            # logging.info( "Venter litt, så du kan simulere nettverksbrudd") 
+            # time.sleep(5)
                 
             skrivjsonfil( skrivnyfil + '.json', meta) 
 
@@ -698,14 +699,14 @@ def kopierfil( gammelfil, nyfil, ventetid=15):
 
         try: 
             copyfile( gammelfil, nyfil )  
-        except OSError as myErr: 
+        except (OSError, FileNotFoundError) as myErr: 
             sovetid = sovetid + count * ventetid
             
             if count < maxTries: 
-                logging.error( "Skriving til fil FEILET " + filnavn + " prøver på ny om " + str( sovetid) + " sekunder" ) 
+                logging.error( "Kopiering av fil FEILET " + gammelfil + " prøver på ny om " + str( sovetid) + " sekunder" ) 
                 time.sleep( sovetid) 
             else: 
-                logging.error( "Skriving til fil FEILET " + filnavn + ", gir opp og går videre"  ) 
+                logging.error( "Skriving til fil FEILET " + gammelfil + ", gir opp og går videre"  ) 
                 logging.error( str(myErr)) 
  
         else: 
