@@ -367,6 +367,7 @@ def slettraretegn( tekst):
     """
 
     
+    tekst = re.sub( r'ÃƒÆ’Ã¢â‚¬Â¦', 'Å', tekst ) 
     tekst = re.sub( r'Ã¥', 'å', tekst ) 
     tekst = re.sub( r'ÃƒËœ', 'Æ', tekst ) 
     
@@ -926,7 +927,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.0 den 13. Juli 2019"
+    versjoninfo = "Flyttvegbilder Versjon 4.1 den 1. okt 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")

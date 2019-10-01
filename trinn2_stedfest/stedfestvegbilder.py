@@ -472,7 +472,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 3.1 den 13. juli 2019"
+    versjonsinfo = "Stedfest vegbilder Versjon 3.2 den 1. okt 2019"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
@@ -532,8 +532,6 @@ if __name__ == '__main__':
             logging.error( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
         else: 
 
-            logging.info( 'Stedfester metadata i mappe ' + datadir )             
-
             logging.info( 'Konfigurasjon: overskrivStedfesting=' + str( overskrivStedfesting ) ) 
             if oppsett: 
                 logging.info( 'Henter oppsett fra fil' + sys.argv[1] ) 
@@ -547,8 +545,8 @@ if __name__ == '__main__':
                 datadir = [ datadir ] 
                 
             for idx, enmappe in enumerate( datadir ): 
-                logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(datadir)) ] ) ) 
-                
+
+                logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(datadir)), enmappe ] ) ) 
                 sorter_mappe_per_meter( enmappe ) 
                 stedfest_jsonfiler( enmappe, overskrivStedfesting=overskrivStedfesting, proxies=proxies )  
   
