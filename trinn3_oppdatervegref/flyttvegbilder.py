@@ -152,18 +152,24 @@ def sjekkretningsendringer( metadata, strekningsnavn, proxies='' ):
     else: 
         filnavn = '/'.join( [ strekningsnavn, metadata['exif_filnavn'] ]) 
         logging.warning( 'Ikke noe filnavn-element i JSON-fil ' + strekningsnavn + ' gammelt filnavn ' + filnavn ) 
+  
+    snuretning = 'Ikke snudd'    
     
-    
-    gammalretning = metreringsretning( metadata['exif_fylke'], metadata['exif_vegkat'], metadata['exif_vegstat'], 
-                                        metadata['exif_vegnr'], metadata['exif_hp'], metadata['exif_meter'], 
-                                        metadata['exif_dato'], filnavn, proxies=proxies) 
-    
-    nyretning = metreringsretning( metadata['fylke'], metadata['vegkat'], metadata['vegstat'], 
-                                        metadata['vegnr'], metadata['hp'], metadata['meter'], 
-                                        metadata['vegreferansedato'], filnavn, proxies=proxies) 
-    snuretning = 'Ikke snudd'
-    if gammalretning and nyretning and gammalretning != nyretning: 
-        snuretning = 'snudd' 
+    if metadata['ny_visveginfosuksess']: 
+        gammalretning = metreringsretning( metadata['exif_fylke'], metadata['exif_vegkat'], metadata['exif_vegstat'], 
+                                            metadata['exif_vegnr'], metadata['exif_hp'], metadata['exif_meter'], 
+                                            metadata['exif_dato'], filnavn, proxies=proxies) 
+        
+        nyretning = metreringsretning( metadata['fylke'], metadata['vegkat'], metadata['vegstat'], 
+                                            metadata['vegnr'], metadata['hp'], metadata['meter'], 
+                                            metadata['vegreferansedato'], filnavn, proxies=proxies) 
+
+        if gammalretning and nyretning and gammalretning != nyretning: 
+            snuretning = 'snudd' 
+    else: 
+        logging.warning( ' '.join( [ "Sjekkretning: Irrelevant å sjekke retning på historisk bilde", 
+                        metadata["filnavn"], metadata['datafangstuuid'] ] ) )         
+        
         
     return snuretning 
         
@@ -927,7 +933,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.1 den 1. okt 2019"
+    versjoninfo = "Flyttvegbilder Versjon 4.2 den 4. okt 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
