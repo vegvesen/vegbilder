@@ -163,7 +163,7 @@ def skrivjsonfil( filnavn, data, ventetid=15):
             anropeMer = False
 
 
-def indekser_jsonfiler( mappe=, database, gammel_database=None, proxies=None ):
+def indekser_jsonfiler( mappe, database, gammel_database=None, proxies=None ):
     t0 = datetime.now()
     jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
     count = 0
@@ -297,7 +297,6 @@ if __name__ == '__main__':
             logging.error( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
         else: 
 
-            logging.info( 'Konfigurasjon: overskrivStedfesting=' + str( overskrivStedfesting ) ) 
             if oppsett: 
                 logging.info( 'Henter oppsett fra fil' + sys.argv[1] ) 
                 
