@@ -168,7 +168,7 @@ def sjekkretningsendringer( metadata, strekningsnavn, proxies='' ):
             snuretning = 'snudd' 
     else: 
         logging.warning( ' '.join( [ "Sjekkretning: Irrelevant å sjekke retning på historisk bilde", 
-                        metadata["filnavn"], metadata['datafangstuuid'] ] ) )         
+                                    filnavn, metadata['datafangstuuid'] ] ) )         
         
         
     return snuretning 
@@ -937,7 +937,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.3 den 21. okt 2019"
+    versjoninfo = "Flyttvegbilder Versjon 4.4 den 21. okt 2019 kl 2120"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
