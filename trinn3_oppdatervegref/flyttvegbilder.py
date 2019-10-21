@@ -409,6 +409,8 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
         # og plukker ut navne-biten av 
         hpbit = metadata['exif_strekningreferanse'].split('/')[1]
         (stedsnavn, raretegn) = plukkstedsnavn( hpbit, fjernraretegn=fjernraretegn ) 
+        
+        
 
         vegnr = metadata['vegkat'].upper() + metadata['vegstat'].lower() + \
                     str( metadata['vegnr'] ) 
@@ -430,6 +432,7 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
         # else: 
             # nystrekning = rotnavn
         nystrekning = rotnavn
+        stedsnavn = ''
         
         if 'feltkode' in metadata.keys(): 
             felt = 'F' + str( metadata['feltkode'] )
@@ -439,19 +442,20 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
         
         nystrekning = os.path.join( nystrekning, '_'.join( [felt, dato] ) )
         nyttfilnavn = '_'.join( [   'Fy' + vegnavn, hptekst, felt, 'm' + str( round( metadata['meter'] )).zfill(5) ] )
-
-        # pdb.set_trace()
-
+    
     else: 
         # Returnerer det gamle navnet på streking og filnavn
         nyttfilnavn = re.sub( '.jpg', '', metadata['exif_filnavn'] ) 
         tmpmapper = mypathsplit( metadata['temp_gammelfilnavn'], 6)
         
-        tmpmapper[-3] = 'HISTORISK-' + tmpmapper[-3] 
+        # fjerner eventuelle stedsnavn 
+        hpnavn = tmpmapper[-3].split('_')[0] 
+        
+        tmpmapper[-3] = 'HISTORISK-' + hpnavn 
         nystrekning = '/'.join( tmpmapper[-6:-1] ) 
                 
         stedsnavn = '' # Stedsnavn står allerede i gammelt filnavn, trenger ikke føye det til 2 ganger
-                
+                        
     return (nystrekning, nyttfilnavn, stedsnavn, raretegn) 
     
 def mypathsplit( filnavn, antallbiter): 
@@ -933,7 +937,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.2 den 4. okt 2019"
+    versjoninfo = "Flyttvegbilder Versjon 4.3 den 21. okt 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")

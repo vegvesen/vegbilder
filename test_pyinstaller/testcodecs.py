@@ -1,10 +1,9 @@
 import json 
 import re
+import os
 
 def lesexifstrekning( kodek ): 
-    liste = [ '/mnt/c/DATA/leveranser/vegbilder/bilder/debug_08Fv402hp1/orginal_stedfesting/' + \
-                '08/2018/08-Fv402/Hp01_LØKEDALEN_XF401/F1_2018_08_21/Fy08_Fv402_hp01_f1_m00044.json', 
-                '/mnt/c/DATA/leveranser/vegbilder/kode/vegbilder/testbilder_prosessert/orginal_stedfesting/06/2018/06_Ev134/Hp05_Damåsen/F1_2018_06_21/Fy06_Ev134_hp05_f1_m03212.json' ]
+    liste = [ 'F1_2018_08_21/Fy08_Fv402_hp01_f1_m00044.json' ]  
 
 #            'C:\DATA\leveranser\vegbilder\kode\vegbilder\testbilder_prosessert\orginal_stedfesting\06\2018\06_Ev134\Hp05_Damåsen\F1_2018_06_21'
 
@@ -14,14 +13,16 @@ def lesexifstrekning( kodek ):
         with open( filnavn, encoding=kodek) as f: 
             metadata = json.load( f) 
             
-        
-        print( metadata['exif_strekningsnavn'] ) 
-        data3 = re.sub( r'ÃƒËœ', 'Æ', metadata['exif_strekningsnavn']) 
+        tekst1 = metadata['exif_strekningsnavn'] 
+        print( tekst1 ) 
+        data3 = re.sub( r'ÃƒËœ', 'Æ', tekst1 ) 
         print( data3) 
         
         
-        allowedchars = r'[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅæøå!-._]'
-        data = re.sub( allowedchars, '_',  metadata['exif_strekningsnavn'] ) 
+        
+        allowedchars = r'[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅæøå/-._]'
+        disallow = r'[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅæøå/\-._]'
+        data = re.sub( disallow, '_',  tekst1 ) 
         print( data) 
         data = re.sub( r'_{1,}', '_', data)
         print( data) 
