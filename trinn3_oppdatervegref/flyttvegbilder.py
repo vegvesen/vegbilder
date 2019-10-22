@@ -457,10 +457,12 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
         hpnavn = hpnavn.split('_')[0] 
         
         hpnavn = 'HISTORISK-' + hpnavn 
-        nystrekning = '/'.join( [ fylke, aar, vegnavn, hpnavn ] ) 
+        nystrekning = '/'.join( [ fylke, aar, vegnavn, hpnavn, felt ] ) 
                 
         stedsnavn = '' # Stedsnavn står allerede i gammelt filnavn, trenger ikke føye det til 2 ganger
-                        
+    
+    nystrekning = re.sub( '\\\\', '/', nystrekning) 
+     
     return (nystrekning, nyttfilnavn, stedsnavn, raretegn) 
     
 def mypathsplit( filnavn, antallbiter): 
@@ -589,7 +591,6 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             meta['mappenavn'] = nystrekning
             meta['strekningsreferanse'] = '/'.join( nystrekning.split('/')[-3:-1])
             meta['retningsnudd'] = snuretning
-            
             tempfilnavn.add( os.path.join( nyttdir, nystrekning, nyttfilnavn) )
             
             if not nystrekning in nytt.keys(): 
