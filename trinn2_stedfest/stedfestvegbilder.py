@@ -15,7 +15,7 @@ import sys
 import time
 import logging
 from xml.parsers.expat import ExpatError
-
+# import pdb
 
 import requests
 import xmltodict # Må installeres, rett fram 
@@ -253,6 +253,21 @@ def skrivjsonfil( filnavn, data, ventetid=15):
         else: 
             anropeMer = False
 
+def manglerstedfesting( meta): 
+    """
+    Sjekker om vi har stedfestet fra før
+    """
+    
+    if not 'veglenkeid' in meta.keys():
+        return True 
+    elif not 'veglenkepos' in meta.keys():
+        return True 
+    elif isinstance( meta['veglenkeid'], int) and isinstance( meta['veglenkepos'], float): 
+        return False 
+    else: 
+        return True 
+
+
 
 def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfesting=False, proxies=None ):
     t0 = datetime.now()
@@ -266,10 +281,8 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
 
         if meta: 
             # Stedfester kun dem som ikke er stedfestet fra før: 
-            if overskrivStedfesting or (not 'stedfestet' in meta.keys() or       \
-                                    ('stedfestet' in meta.keys()                 \
-                                        and isinstance( meta['stedfestet'], str) \
-                                        and meta['stedfestet'].upper() != 'JA' )): 
+            if overskrivStedfesting or manglerstedfesting( meta): 
+                
                 count += 1
                 try: 
                     meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
@@ -297,7 +310,8 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
                                 
     diff = len(jsonfiler) - count
     if diff > 0: 
-        logging.info( 'Hoppet over ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
+        logging.info( 'Hoppet over ' + str( diff) + ' av ' + str( len( jsonfiler) ) + \
+        ' vegbilder som var stedfestet fra før' ) 
 
     diff = count - count_suksess
     if diff > 0: 
@@ -306,6 +320,19 @@ def stedfest_jsonfiler( mappe='../bilder/regS_orginalEv134', overskrivStedfestin
     if count_fatalt > 0: 
         logging.error( 'Stedfesting FEILET med ukjent feilsituasjon for ' + str( count_fatalt) + ' vegbilder' ) 
 
+def manglersortering( filnavn ): 
+    """
+    Sjekker om vi har sortert metadata-elementene
+    """ 
+    meta = lesjsonfil( filnavn)
+    
+    if 'neste_uuid' in meta.keys() and meta['neste_uuid']:
+        return False 
+    elif 'forrige_uuid' in meta.keys() and meta['forrige_uuid']:
+        return False 
+    else: 
+        return True 
+
 def sorter_mappe_per_meter(datadir, overskrivStedfesting=False): 
     # Finner alle mapper med json-filer, sorterer bildene med forrige-neste logikk
     # 
@@ -313,97 +340,100 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
     folders = set(folder for folder, subfolders, files in os.walk(datadir) for file_ in files if re.search( "fy[0-9]{1,2}.*hp.*m[0-9]{1,6}.json", file_, re.IGNORECASE)  )
 
     for mappe in folders: 
-        logging.info( "Leter i mappe " +  mappe) 
 
         templiste = []
         meta_datafangst_uuid = str( uuid.uuid4() )
 
         jsonfiler = findfiles( 'fy*hp*m*.json', where=mappe) 
+        if overskrivStedfesting or manglersortering( os.path.join( mappe, jsonfiler[0])): 
+            logging.info( "Sorterer mappe " + mappe) 
 
-        # Finner feltinformasjon ut fra mappenavn F1_yyyy_mm_dd 
-        feltnr = 1 # Default
-        (rotmappe, feltmappe) = os.path.split( mappe) 
-        feltmappebiter = feltmappe.split( '_') 
-        meta_kjfelt = feltmappebiter[0]
-        
-        if len( feltmappebiter) != 4 or meta_kjfelt[0].upper() != 'F': 
-            logging.warning( "QA-feil: Feil mappenavn, forventer F<feltnummer>_<år>_<mnd>_<dag> " +  mappe) 
-        try: 
-            feltnr = int( re.sub( "\D", "", meta_kjfelt )) 
-        except ValueError:
-            logging.warning( 'QA-feil: Klarte ikke finne feiltinformasjon for mappe ' + mappe) 
-        
-        if feltnr % 2 == 0:
-            meta_retning = 'MOT'
-            jsonfiler.sort( reverse=True)
-        else: 
-            meta_retning = 'MED'
-            jsonfiler.sort() 
+            # Finner feltinformasjon ut fra mappenavn F1_yyyy_mm_dd 
+            feltnr = 1 # Default
+            (rotmappe, feltmappe) = os.path.split( mappe) 
+            feltmappebiter = feltmappe.split( '_') 
+            meta_kjfelt = feltmappebiter[0]
             
-        for eijsonfil in jsonfiler: 
-            
-            fname = os.path.join( mappe, eijsonfil) 
-            lest_OK = False 
+            if len( feltmappebiter) != 4 or meta_kjfelt[0].upper() != 'F': 
+                logging.warning( "QA-feil: Feil mappenavn, forventer F<feltnummer>_<år>_<mnd>_<dag> " +  mappe) 
             try: 
-                with open( fname) as f: 
-                    metadata = json.load( f) 
-            except UnicodeDecodeError as myErr: 
-                logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) )  
+                feltnr = int( re.sub( "\D", "", meta_kjfelt )) 
+            except ValueError:
+                logging.warning( 'QA-feil: Klarte ikke finne feiltinformasjon for mappe ' + mappe) 
+            
+            if feltnr % 2 == 0:
+                meta_retning = 'MOT'
+                jsonfiler.sort( reverse=True)
+            else: 
+                meta_retning = 'MED'
+                jsonfiler.sort() 
+        
+            for eijsonfil in jsonfiler: 
                 
+                fname = os.path.join( mappe, eijsonfil) 
+                lest_OK = False 
                 try: 
-                    with open( fname, encoding='latin-1') as f: 
-                        text = f.read()
-                    textUtf8 = text.encode('utf-8') 
-                    metadata = json.loads( textUtf8) 
-                except UnicodeDecodeError as myErr2:
-                    logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
+                    with open( fname) as f: 
+                        metadata = json.load( f) 
+                except UnicodeDecodeError as myErr: 
+                    logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) )  
+                    
+                    try: 
+                        with open( fname, encoding='latin-1') as f: 
+                            text = f.read()
+                        textUtf8 = text.encode('utf-8') 
+                        metadata = json.loads( textUtf8) 
+                    except UnicodeDecodeError as myErr2:
+                        logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
+                    else: 
+                        lest_OK = True
+                    
+                    
+                except OSError as myErr: 
+                    logging.warning( ' '.join( [  "Kan ikke lese inn JSON-fil", fname, str(myErr) ] ) ) 
                 else: 
                     lest_OK = True
                 
+                if lest_OK: 
                 
-            except OSError as myErr: 
-                logging.warning( ' '.join( [  "Kan ikke lese inn JSON-fil", fname, str(myErr) ] ) ) 
-            else: 
-                lest_OK = True
-            
-            if lest_OK: 
-            
-               # Legger viatech-xml'en sist
-                imageproperties = metadata.pop( 'exif_imageproperties' ) 
-                
-                metadata['temp_filnavn'] =  fname
+                   # Legger viatech-xml'en sist
+                    imageproperties = metadata.pop( 'exif_imageproperties' ) 
+                    
+                    metadata['temp_filnavn'] =  fname
 
+                    
+                    # Retning og feltkode
+                    metadata['retning'] = meta_retning
+                    metadata['filnavn_feltkode'] = meta_kjfelt
+                  
+                    
+                    # Utleder riktig mappenavn 
+                    metadata['mappenavn'] = utledMappenavn( mappe) 
                 
-                # Retning og feltkode
-                metadata['retning'] = meta_retning
-                metadata['filnavn_feltkode'] = meta_kjfelt
-              
-                
-                # Utleder riktig mappenavn 
-                metadata['mappenavn'] = utledMappenavn( mappe) 
-            
-                # Unik ID for hvert bilde, og felles ID for alle bilder i samme mappe
-                metadata['datafangstuuid'] = meta_datafangst_uuid
-                if not 'bildeuiid' in metadata.keys() or not metadata['bildeuiid']: 
-                    metadata['bildeuiid'] = str( uuid.uuid4() ) 
-                metadata['forrige_uuid'] = None
-                metadata['neste_uuid'] = None
-                
-                
-                # Legger til et par tagger for administrering av metadata
-                metadata['stedfestet'] = 'NEI'
-                metadata['indeksert_i_db'] = None
+                    # Unik ID for hvert bilde, og felles ID for alle bilder i samme mappe
+                    metadata['datafangstuuid'] = meta_datafangst_uuid
+                    if not 'bildeuiid' in metadata.keys() or not metadata['bildeuiid']: 
+                        metadata['bildeuiid'] = str( uuid.uuid4() ) 
+                    metadata['forrige_uuid'] = None
+                    metadata['neste_uuid'] = None
+                    
+                    
+                    # Legger til et par tagger for administrering av metadata
+                    # metadata['stedfestet'] = 'NEI'
+                    metadata['indeksert_i_db'] = None
 
-                # Legger viatech-xml'en sist
-                metadata['exif_imageproperties' ] = imageproperties
-                
-                # Føyer på den korte listen
-                templiste.append(  metadata) 
+                    # Legger viatech-xml'en sist
+                    metadata['exif_imageproperties' ] = imageproperties
+                    
+                    # Føyer på den korte listen
+                    templiste.append(  metadata) 
 
-            else: 
-                logging.warning( 'Måtte hoppe over ' + fname) 
+                else: 
+                    logging.warning( 'Måtte hoppe over ' + fname) 
 
-         # Lenkar sammen den lenkede listen 
+        else: 
+            logging.info( "Skipper sortering av mappe" + mappe) 
+        # Lenkar sammen den lenkede listen 
         for ii in range( 0, len(templiste)): 
             
             # Forrige element i listen
@@ -472,7 +502,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 3.2 den 1. okt 2019"
+    versjonsinfo = "Stedfest vegbilder Versjon 3.3 den 22. okt 2019"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
@@ -547,7 +577,7 @@ if __name__ == '__main__':
             for idx, enmappe in enumerate( datadir ): 
 
                 logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(datadir)), enmappe ] ) ) 
-                sorter_mappe_per_meter( enmappe ) 
+                sorter_mappe_per_meter( enmappe, overskrivStedfesting=overskrivStedfesting ) 
                 stedfest_jsonfiler( enmappe, overskrivStedfesting=overskrivStedfesting, proxies=proxies )  
   
             logging.info( "FERDIG " + versjonsinfo ) 
