@@ -445,14 +445,19 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
     
     else: 
         # Returnerer det gamle navnet på streking og filnavn
+        # men overstyrer fylke og aar - delen av navnet 
+        # fordi vi av og til bruker "siste" - mappe 
         nyttfilnavn = re.sub( '.jpg', '', metadata['exif_filnavn'] ) 
-        tmpmapper = mypathsplit( metadata['temp_gammelfilnavn'], 6)
+        (rot, vegnavn, hpnavn, felt, filnavn) = mypathsplit( metadata['temp_gammelfilnavn'], 4)
+        
+        aar = metadata['exif_dato'][0:4] 
+        fylke = str( metadata['fylke']).zfill(2)
         
         # fjerner eventuelle stedsnavn 
-        hpnavn = tmpmapper[-3].split('_')[0] 
+        hpnavn = hpnavn.split('_')[0] 
         
-        tmpmapper[-3] = 'HISTORISK-' + hpnavn 
-        nystrekning = '/'.join( tmpmapper[-6:-1] ) 
+        hpnavn = 'HISTORISK-' + hpnavn 
+        nystrekning = '/'.join( [ fylke, aar, vegnavn, hpnavn ] ) 
                 
         stedsnavn = '' # Stedsnavn står allerede i gammelt filnavn, trenger ikke føye det til 2 ganger
                         
@@ -541,6 +546,8 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
                 (rot, hpmappenavn, feltmappenavn) = mypathsplit( strekning, 2) 
                 (stedsnavn, raretegn) = plukkstedsnavn( hpmappenavn, fjernraretegn=fjernraretegn )  
                 nytt_strekningsnavn = '/'.join( [ rot, 'HISTORISK-'+hpmappenavn, feltmappenavn ] )
+                # pdb.set_trace()
+
             
             if raretegn and raretegn not in mineraretegn: 
                 mineraretegn.add( raretegn) 
@@ -577,13 +584,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
             tempcount += 1
             meta = deepcopy( sjekkfelt( fil, snuretning=snuretning) )
             (nystrekning, nyttfilnavn, stedsnavn, raretegn) = lag_strekningsnavn( meta, fjernraretegn=fjernraretegn) 
-            
-            # Føyer til stedsnavn hvis vi har et og det er unikt: 
-            (rot, hp, felt) = mypathsplit( nystrekning, 2) 
-            if stedsnavn and rot in hpnavn.keys() and uniktstedsnavn( hpnavn[rot], stedsnavn): 
-                hp = '_'.join( [ hp, stedsnavn ] ) 
-            nystrekning = '/'.join( [ rot, hp, felt] ) 
-            
+                        
             meta['filnavn'] = nyttfilnavn
             meta['mappenavn'] = nystrekning
             meta['strekningsreferanse'] = '/'.join( nystrekning.split('/')[-3:-1])
@@ -692,9 +693,6 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
     logging.info( " ".join( [ "Antall filnavn på ulike steg:", str( len( tempfilnavn)), str( len(ferdigfilnavn)) ]) )
     dt = datetime.now() - t0
     logging.info( " ".join( [ "Tidsforbruk", str( dt.total_seconds()), 'sekunder' ])) 
-    
-                
-    # pdb.set_trace()
 
 def kopierfil( gammelfil, nyfil, ventetid=15): 
     """
