@@ -796,6 +796,10 @@ def lesjsonfil( filnavn, ventetid=15):
                 meta = None
                 anropeMer = False
         
+        except (json.decoder.JSONDecodeError) as myErr: 
+            logging.error( ' '.join( ["Feil i JSON-fil, ignorerer:", filnavn, str(myErr ) ] ) )
+            meta = None         
+        
         except OSError as myErr: 
             sovetid = sovetid + count * ventetid
             
@@ -936,7 +940,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.5 den 22. okt 2019"
+    versjoninfo = "Flyttvegbilder Versjon 4.6 den 23. okt 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
