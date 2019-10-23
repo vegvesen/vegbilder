@@ -194,18 +194,24 @@ def lesjsonfil( filnavn, ventetid=15):
                 meta = json.load(f)    
             
         except UnicodeDecodeError as myErr: 
-            logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) ) 
+            logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", filnavn, str(myErr) ] ) ) 
         
             try: 
-                with open( fname, encoding='latin-1') as f: 
+                with open( filnavn, encoding='latin-1') as f: 
                     text = f.read()
                     textUtf8 = text.encode('utf-8') 
                     meta = json.loads( textUtf8) 
             except UnicodeDecodeError as myErr2:
-                logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
+                logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", filnavn, str(myErr2) ] ) ) 
                 meta = None
                 anropeMer = False
         
+        except (json.decoder.JSONDecodeError) as myErr: 
+            logging.error( ' '.join( ["Feil i JSON-fil, ignorerer:", filnavn, str(myErr ) ] ) )
+            meta = None 
+            
+            
+            
         except OSError as myErr: 
             sovetid = sovetid + count * ventetid
             
@@ -370,31 +376,9 @@ def sorter_mappe_per_meter(datadir, overskrivStedfesting=False):
         
             for eijsonfil in jsonfiler: 
                 
-                fname = os.path.join( mappe, eijsonfil) 
-                lest_OK = False 
-                try: 
-                    with open( fname) as f: 
-                        metadata = json.load( f) 
-                except UnicodeDecodeError as myErr: 
-                    logging.warning( ' '.join( [  "Tegnsett-problem, prøver å fikse:", fname, str(myErr) ] ) )  
-                    
-                    try: 
-                        with open( fname, encoding='latin-1') as f: 
-                            text = f.read()
-                        textUtf8 = text.encode('utf-8') 
-                        metadata = json.loads( textUtf8) 
-                    except UnicodeDecodeError as myErr2:
-                        logging.warning( ' '.join( [  "Gir opp å fikse tegnsett-problem:", fname, str(myErr2) ] ) ) 
-                    else: 
-                        lest_OK = True
-                    
-                    
-                except OSError as myErr: 
-                    logging.warning( ' '.join( [  "Kan ikke lese inn JSON-fil", fname, str(myErr) ] ) ) 
-                else: 
-                    lest_OK = True
-                
-                if lest_OK: 
+                fname = os.path.join( mappe, eijsonfil)
+                metadata = lesjsonfil( fname ) 
+                if metadata: 
                 
                    # Legger viatech-xml'en sist
                     imageproperties = metadata.pop( 'exif_imageproperties' ) 
@@ -502,7 +486,7 @@ if __name__ == '__main__':
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 3.3 den 22. okt 2019"
+    versjonsinfo = "Stedfest vegbilder Versjon 3.4 den 23. okt 2019"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
