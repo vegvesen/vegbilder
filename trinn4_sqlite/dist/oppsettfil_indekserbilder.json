@@ -5,7 +5,5 @@
   "IKKEIBRUK_gammel_database" : "filnavn.sqlite/alleredeindeksert", 
   "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
   "logname"      : "indekservegbilder", 
-  "logdir"       : "loggfiler_indekservegbilder", 
-  "ignorerproxies"      :  "", 
-  "proxies" : { "http" : "proxy.vegvesen.no:8080", "https" : "proxy.vegvesen.no:8080"  } 
+  "logdir"       : "loggfiler_indekservegbilder"
   }

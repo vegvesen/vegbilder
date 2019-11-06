@@ -45,7 +45,7 @@ from xml.parsers.expat import ExpatError
 
 
 import requests
-import xmltodict # Må installeres, rett fram 
+# import xmltodict # Må installeres, rett fram 
 import duallog 
 
 
@@ -70,21 +70,17 @@ def recursive_findfiles(which, where='.'):
 
     # TODO: recursive param with walk() filtering
     
-    
     rule = re.compile(fnmatch.translate(which), re.IGNORECASE)
     
     filnavn = []
     for root, d_names, f_names in os.walk(where): 
         for name in f_names:
             if rule.match(name):
-                filnavn.append( os.path.join( root, name) )
-               
-
-    # return [name for name in os.listdir(where) if rule.match(name)]
+                filnavn.append( re.sub( '\\\\', '/', os.path.join( root, name) ) )
+    
     return filnavn
-
-
-
+    
+    
 def lesjsonfil( filnavn, ventetid=15): 
     """
     Åpner og leser JSON-fil. Tolererer nettverksfeil og tar en pause før vi prøver på ny (inntil 4 ganger
@@ -125,12 +121,9 @@ def lesjsonfil( filnavn, ventetid=15):
                 logging.error( "Lesing av JSON-fil FEILET " + filnavn + ", gir opp og går videre"   ) 
                 logging.error( str( myErr) ) 
                 meta = None
-
- 
+                
         else: 
             anropeMer = False
-        
-     
 
     return meta 
 
@@ -162,54 +155,93 @@ def skrivjsonfil( filnavn, data, ventetid=15):
         else: 
             anropeMer = False
 
+def opensqlite( sqlitefile, opprettfil=False ): 
+    """'
+    Åpner sqlite-fil med metadata
+    
+    Arguments
+        sqlitefile: file name.sqlite/table_name of file to open 
+        
+    keywords
+        opprettfil: Will make an sqlite-fil and/or table if none exists. 
+    
+    Returns 
+        CURSOR object for the relevant table, or None if not successful  
+    """
+    
+    return None 
 
-def indekser_jsonfiler( mappe, database, gammel_database=None, proxies=None ):
+
+def sjekkgammeldatabase( gammeldatabase, metadata, tilfoygammel=False): 
+    """
+    Sjekker om metadataelement finnes fra før, og føyer det evt til om det mangler
+    
+    Arguments
+        gammeldatabase: None eller Kobling til sqlite-tabell med 
+                        allerede indekserte metadata-element
+        metadata: Metadata-element lest fra json-fil
+        
+    Keywords
+        tilfoygammel: false (default) | true 
+    """
+    if not gammeldatabase: 
+        return False 
+
+    finnes = False 
+    return finnes
+
+def skrivmetadataSqlite( sqlitecurs, metadata, filnavn): 
+    """
+    Skriver metadata til angitt tabell 
+    
+    Arguments: 
+        sqlitecurs: Cursor for sqlite-tabell
+
+        metadata: Metadataelement som skal skrives
+        
+        filnavn: Filnavn for json-fil / bildefil 
+        
+    
+    Returns: True (successful) or False (fail) 
+    """ 
+    
+    print( filnavn) 
+    
+    return True 
+
+def indekser_jsonfiler( mappe, database, gammel_database=None ):
     t0 = datetime.now()
     jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
     count = 0
     count_suksess = 0 
     count_fatalt = 0 
+    
+    gmlsqlite = opensqlite( gammel_database, opprettfil=False)
+    nysqlite = opensqlite( database, opprettfil=True) 
  
     for (nummer, filnavn) in enumerate(jsonfiler): 
+        count += 1 
         meta = lesjsonfil( filnavn) 
 
         if meta: 
-            # Stedfester kun dem som ikke er stedfestet fra før: 
-            if overskrivStedfesting or (not 'stedfestet' in meta.keys() or       \
-                                    ('stedfestet' in meta.keys()                 \
-                                        and isinstance( meta['stedfestet'], str) \
-                                        and meta['stedfestet'].upper() != 'JA' )): 
-                count += 1
-                try: 
-                    # meta = visveginfo_vegreferanseoppslag( meta, proxies=proxies, filnavn=filnavn) 
-                    pass 
-                except Exception:
-                    count_fatalt += 1
-                    logging.error( "Fatal feil i visveginfo_referanseoppslag for fil: " + filnavn )
-                    logging.exception("Stack trace for fatal feil:")
-                else: 
-                
-                    if meta['stedfestet'] == 'JA' : 
-                        count_suksess += 1
-                    
-                    # skrivjsonfil( filnavn, meta) 
-                    
-            if nummer == 10 or nummer == 100 or nummer % 500 == 0: 
-                dt = datetime.now() - t0 
-                logging.info( ' '.join( [ 'Stedfester bilde', str( nummer+1), 'av', 
-                                        str( len(jsonfiler)), str( dt.total_seconds()) , 'sekunder' ] ) )
- 
+
+            if not sjekkgammeldatabase( gmlsqlite, meta, tilfoygammel=True):  
+                suksess = skrivmetadataSqlite( nysqlite, meta, filnavn)
+                if suksess:
+                    count_suksess += 1
+
     dt = datetime.now() - t0
-    logging.info( ' '.join( [ 'Prøvde å stedfeste', str( count) , 'av', str( len(jsonfiler)), 
-                                'vegbilder på', str( dt.total_seconds()), 'sekunder' ] ) ) 
+    logging.info( ' '.join( [ 'Indekserte', str( count_suksess ) , 'av', 
+                                str( len(jsonfiler)), 'vegbilder på', 
+                                str( dt.total_seconds()), 'sekunder' ] ) ) 
                                 
-    diff = len(jsonfiler) - count
+    diff = len(jsonfiler) - count_suksess
     if diff > 0: 
         logging.info( 'Hoppet over ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
 
     diff = count - count_suksess
     if diff > 0: 
-        logging.warning( 'Stedfesting FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
+        logging.warning( 'Indeksering FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
         
     if count_fatalt > 0: 
         logging.error( 'Stedfesting FEILET med ukjent feilsituasjon for ' + str( count_fatalt) + ' vegbilder' ) 
@@ -243,8 +275,6 @@ if __name__ == '__main__':
     gammel_database = ''
     logdir = 'log' 
     logname='indekservegbilder_' 
-    proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
-
     
     versjonsinfo = "Indekser vegbilder Versjon 0.1 den 20. okt 2019"
     print( versjonsinfo ) 
@@ -257,7 +287,7 @@ if __name__ == '__main__':
     else: 
         
         if '.json' in sys.argv[1][-5:].lower(): 
-            print( 'vegbilder_lesexif: Leser oppsettfil fra', sys.argv[1] ) 
+            print( 'Leser oppsettfil fra', sys.argv[1] ) 
             with open( sys.argv[1]) as f: 
                 oppsett = json.load( f) 
 
@@ -279,13 +309,10 @@ if __name__ == '__main__':
             duallog.duallogSetup( logdir=logdir, logname=logname) 
             logging.info( versjonsinfo ) 
             
-            if 'proxies' in oppsett.keys():
-                proxies = oppsett['proxies']
-            
             if 'gammel_database' in oppsett.keys(): 
                 gammel_database = oppsett['gammel_database']
                 if gammel_database: 
-                    logging.info( 'Sammenligner med eksisterende metadata: ' + sys.gammel_database  ) 
+                    logging.info( 'Sammenligner med eksisterende metadata: ' + gammel_database  ) 
                                    
         else: 
             datadir = sys.argv[1]
@@ -296,14 +323,6 @@ if __name__ == '__main__':
         if not datadir: 
             logging.error( 'Påkrevd parameter "datadir" ikke angitt, du må fortelle meg hvor vegbildene ligger') 
         else: 
-
-            if oppsett: 
-                logging.info( 'Henter oppsett fra fil' + sys.argv[1] ) 
-                
-            if proxies: 
-                logging.info( 'Bruker proxy for http-kall: ' + str( proxies )  ) 
-            else: 
-                logging.info( 'Bruker IKKE proxy for http kall' )  
                 
             if not isinstance( datadir, list): 
                 datadir = [ datadir ] 
@@ -312,7 +331,7 @@ if __name__ == '__main__':
 
                 logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(datadir)), enmappe ] ) ) 
                 
-                indekser_jsonfiler( enmappe, database, gammel_database=gammel_database, proxies=proxies )  
+                indekser_jsonfiler( enmappe, database, gammel_database=gammel_database )  
   
             logging.info( "FERDIG " + versjonsinfo ) 
 
