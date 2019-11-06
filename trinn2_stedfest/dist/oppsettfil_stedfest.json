@@ -5,5 +5,7 @@
   "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
   "logname"      : "stedfesting_", 
   "logdir"       : "loggfiler_stedfesting", 
-   "proxies"      :  { "http" : "proxy.vegvesen.no:8080", "https" : "proxy.vegvesen.no:8080"  }   
+   "proxies"      :  { "http" : "proxy.vegvesen.no:8080", "https" : "proxy.vegvesen.no:8080"  }, 
+  "info_huggMappeTre" : "huggMappeTre = 1 : Prosesserer hver undermappe av datadir for seg; 2 = hver under-undermappe for seg osv",
+  "huggMappeTre" : 1,   
   }

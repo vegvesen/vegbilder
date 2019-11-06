@@ -476,6 +476,25 @@ def test( ):
         
     meta = visveginfo_vegreferanseoppslag( meta) 
     return meta
+
+def finnundermapper( enmappe, overskrivStedfesting=False, proxies=False, huggMappeTre=False  ):
+
+    if huggMappeTre: 
+    
+        logging.info( "finner undermapper til: " +  enmappe ) 
+        huggMappeTre = huggMappeTre - 1
+        
+        folders = [f for f in glob.glob(enmappe + "/*/")]
+        for undermappe in folders: 
+            logging.info( "fant undermappe: " + undermappe) 
+            finnundermapper( undermappe, overskrivStedfesting=overskrivStedfesting, proxies=proxies, huggMappeTre=huggMappeTre  )
+
+    else: 
+        print( "Starter proseessering av undermappe: " + enmappe) 
+    
+        sorter_mappe_per_meter( enmappe, overskrivStedfesting=overskrivStedfesting ) 
+        stedfest_jsonfiler( enmappe, overskrivStedfesting=overskrivStedfesting, proxies=proxies )  
+
     
 if __name__ == '__main__': 
 
@@ -484,9 +503,10 @@ if __name__ == '__main__':
     logdir = 'log' 
     logname='stedfestvegbilder_' 
     proxies = { 'http' : 'proxy.vegvesen.no:8080', 'https' : 'proxy.vegvesen.no:8080'  }
+    huggMappeTre = False
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 3.4 den 23. okt 2019"
+    versjonsinfo = "Stedfest vegbilder Versjon 3.5 den 6. nov 2019"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
@@ -516,6 +536,9 @@ if __name__ == '__main__':
 
             if 'logname' in oppsett.keys():
                 logname = oppsett['logname']
+                
+            if 'huggMappeTre' in oppsett.keys():
+                huggMappeTre = oppsett['huggMappeTre']
 
             duallog.duallogSetup( logdir=logdir, logname=logname) 
             logging.info( versjonsinfo ) 
@@ -548,21 +571,31 @@ if __name__ == '__main__':
 
             logging.info( 'Konfigurasjon: overskrivStedfesting=' + str( overskrivStedfesting ) ) 
             if oppsett: 
-                logging.info( 'Henter oppsett fra fil' + sys.argv[1] ) 
+                logging.info( 'Henter oppsett fra fil: ' + sys.argv[1] ) 
                 
             if proxies: 
                 logging.info( 'Bruker proxy for http-kall: ' + str( proxies )  ) 
             else: 
                 logging.info( 'Bruker IKKE proxy for http kall' )  
-                
+                            
             if not isinstance( datadir, list): 
                 datadir = [ datadir ] 
                 
             for idx, enmappe in enumerate( datadir ): 
 
                 logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(datadir)), enmappe ] ) ) 
-                sorter_mappe_per_meter( enmappe, overskrivStedfesting=overskrivStedfesting ) 
-                stedfest_jsonfiler( enmappe, overskrivStedfesting=overskrivStedfesting, proxies=proxies )  
+                if huggMappeTre:
+                    if huggMappeTre == 1: 
+                        logging.info( 'huggMappeTre: Vil ta hver undermappe i katalogen(e) "datadir" for seg' )
+                    else:
+                        logging.info( 'huggMappeTre: Vil ta under-underkataloger for ' + str( huggMappeTre) + 
+                                        'nivåer nedover relativt til "datadir"-katalogen(e) for seg' ) 
+                else: 
+                    logging.info( "Ingen huggMappeTre - parameter") 
+
+                # sorter_mappe_per_meter( enmappe, overskrivStedfesting=overskrivStedfesting ) 
+                # stedfest_jsonfiler( enmappe, overskrivStedfesting=overskrivStedfesting, proxies=proxies )  
+                finnundermapper( enmappe, overskrivStedfesting=overskrivStedfesting, proxies=proxies, huggMappeTre=huggMappeTre  )  
   
             logging.info( "FERDIG " + versjonsinfo ) 
 
