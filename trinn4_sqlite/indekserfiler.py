@@ -42,6 +42,7 @@ import sys
 import time
 import logging
 from xml.parsers.expat import ExpatError
+from copy import deepcopy
 
 
 import requests
@@ -125,7 +126,43 @@ def lesjsonfil( filnavn, ventetid=15):
         else: 
             anropeMer = False
 
-    return meta 
+    return meta
+
+
+def fiksutf8( meta): 
+
+    kortalfabet = 'abcdefghijklmnopqrstuvwxyz'
+    alfabet = kortalfabet + 'æøå'
+    tegn  = '0123456789.,:;-_ *+/++<>\\' 
+    godkjent = tegn + alfabet + alfabet.upper()
+    raretegn = False
+
+    tulletegn = set( ) 
+    # Prøver å fikse tegnsett 
+    if meta and isinstance( meta, dict): 
+        old = deepcopy( meta) 
+        for key, value in old.items():
+            if isinstance( value, str): 
+                nystr = ''
+                rart = False 
+                for bokstav in value: 
+                    if bokstav in godkjent: 
+                        nystr += bokstav
+                    else:
+                       tulletegn.add( bokstav)  
+                       rart = True 
+                       
+                if rart: 
+                    nystr = nystr.replace( 'Æ', '_')
+                    nystr = nystr.replace( 'Å', '_') 
+                    
+                    nystr = re.sub('_{2,}', '_', nystr )
+                    
+                    raretegn = True 
+                meta[key] = nystr
+
+    return meta, raretegn
+
 
 def skrivjsonfil( filnavn, data, ventetid=15): 
     """
@@ -216,35 +253,40 @@ def indekser_jsonfiler( mappe, database, gammel_database=None ):
     count_suksess = 0 
     count_fatalt = 0 
     
-    gmlsqlite = opensqlite( gammel_database, opprettfil=False)
-    nysqlite = opensqlite( database, opprettfil=True) 
+    # gmlsqlite = opensqlite( gammel_database, opprettfil=False)
+    # nysqlite = opensqlite( database, opprettfil=True) 
  
     for (nummer, filnavn) in enumerate(jsonfiler): 
         count += 1 
         meta = lesjsonfil( filnavn) 
 
         if meta: 
+            # print( meta) 
+            (meta, raretegn) = fiksutf8( meta) 
+            print( json.dumps( meta, indent=4)) 
+            
+            return 
 
-            if not sjekkgammeldatabase( gmlsqlite, meta, tilfoygammel=True):  
-                suksess = skrivmetadataSqlite( nysqlite, meta, filnavn)
-                if suksess:
-                    count_suksess += 1
+            # if not sjekkgammeldatabase( gmlsqlite, meta, tilfoygammel=True):  
+                # suksess = skrivmetadataSqlite( nysqlite, meta, filnavn)
+                # if suksess:
+                    # count_suksess += 1
 
-    dt = datetime.now() - t0
-    logging.info( ' '.join( [ 'Indekserte', str( count_suksess ) , 'av', 
-                                str( len(jsonfiler)), 'vegbilder på', 
-                                str( dt.total_seconds()), 'sekunder' ] ) ) 
+    # dt = datetime.now() - t0
+    # logging.info( ' '.join( [ 'Indekserte', str( count_suksess ) , 'av', 
+                                # str( len(jsonfiler)), 'vegbilder på', 
+                                # str( dt.total_seconds()), 'sekunder' ] ) ) 
                                 
-    diff = len(jsonfiler) - count_suksess
-    if diff > 0: 
-        logging.info( 'Hoppet over ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
+    # diff = len(jsonfiler) - count_suksess
+    # if diff > 0: 
+        # logging.info( 'Hoppet over ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
 
-    diff = count - count_suksess
-    if diff > 0: 
-        logging.warning( 'Indeksering FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
+    # diff = count - count_suksess
+    # if diff > 0: 
+        # logging.warning( 'Indeksering FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
         
-    if count_fatalt > 0: 
-        logging.error( 'Stedfesting FEILET med ukjent feilsituasjon for ' + str( count_fatalt) + ' vegbilder' ) 
+    # if count_fatalt > 0: 
+        # logging.error( 'Stedfesting FEILET med ukjent feilsituasjon for ' + str( count_fatalt) + ' vegbilder' ) 
 
 def findfiles(which, where='.'):
     '''
