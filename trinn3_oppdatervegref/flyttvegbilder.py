@@ -20,7 +20,7 @@ import sys
 import logging
 from xml.parsers.expat import ExpatError
 import time
-
+import glob 
 
 
 import requests
@@ -833,6 +833,7 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
     oversikt = { } 
     count_fatalt = 0 
     count_ferskvare = 0 
+    count_raretegn = 0
 
     t0 = datetime.now()
     logging.info(str( t0) )
@@ -847,9 +848,14 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
         for bilde in jsonfiler: 
             fname = os.path.join( mappe, bilde)
             
-            metadata = lesjsonfil( fname) 
-                
+            metadata  = lesjsonfil( fname) 
+                                
             if metadata: 
+
+                (metadata, raretegn) = fiksutf8( metadata) 
+                if raretegn: 
+                    logging.info( 'Rare tegn funnet i fil' + fname ) 
+                    count_raretegn += 1 
                 
                 feltmappe = metadata['exif_mappenavn'].split('/')[-1] 
                 strekningsmappe = os.path.join( metadata['mappenavn'], feltmappe) 
@@ -923,7 +929,59 @@ def findfiles(which, where='.'):
 
     return [name for name in os.listdir(where) if rule.match(name)]
     
+
+def fiksutf8( meta): 
+
+    kortalfabet = 'abcdefghijklmnopqrstuvwxyz'
+    alfabet = kortalfabet + 'æøå'
+    tegn  = '0123456789.,:;-_ *+/++<>\\' 
+    godkjent = tegn + alfabet + alfabet.upper()
+    raretegn = False
+
+    tulletegn = set( ) 
+    # Prøver å fikse tegnsett 
+    if meta and isinstance( meta, dict): 
+        old = deepcopy( meta) 
+        for key, value in old.items():
+            if isinstance( value, str): 
+                nystr = ''
+                rart = False 
+                for bokstav in value: 
+                    if bokstav in godkjent: 
+                        nystr += bokstav
+                    else:
+                       tulletegn.add( bokstav)  
+                       rart = True 
+                       
+                if rart: 
+                    nystr = nystr.replace( 'Æ', '_')
+                    nystr = nystr.replace( 'Å', '_') 
+                    
+                    nystr = re.sub('_{2,}', '_', nystr )
+                    
+                    raretegn = True 
+                meta[key] = nystr
+
+    return meta, raretegn
+
+
+def finnundermapper( enmappe, huggMappeTre=None, **kwargs):
+
+    if huggMappeTre: 
     
+        logging.info( "finner undermapper til: " +  enmappe ) 
+        huggMappeTre = huggMappeTre - 1
+        
+        folders = [f for f in glob.glob(enmappe + "/*/")]
+        for undermappe in folders: 
+            logging.info( "fant undermappe: " + undermappe) 
+            finnundermapper( undermappe, **kwargs )
+
+    else: 
+        print( "Starter proseessering av undermappe: " + enmappe) 
+    
+        flyttfiler( gammeltdir=enmappe, **kwargs)
+
 if __name__ == "__main__": 
 
     nyttdir = None
@@ -934,13 +992,14 @@ if __name__ == "__main__":
     eldstedato = '1949-31-12'
     stabildato = eldstedato
     fjernraretegn = True
+    huggMappeTre = False
 
 
     # flyttfiler(gammeltdir='vegbilder/testbilder_prosessert/orginal_stedfesting', 
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.6 den 23. okt 2019"
+    versjoninfo = "Flyttvegbilder Versjon 4.7 den 10 nov 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
@@ -975,7 +1034,10 @@ if __name__ == "__main__":
                 stabildato = oppsett['stabildato']            
 
             if 'fjernraretegn' in oppsett.keys():
-                fjernraretegn = oppsett['fjernraretegn']            
+                fjernraretegn = oppsett['fjernraretegn']
+            
+            if 'huggMappeTre' in oppsett.keys():
+                huggMappeTre = oppsett['huggMappeTre']
                 
         else: 
             gammeltdir = sys.argv[1]
@@ -1010,7 +1072,25 @@ if __name__ == "__main__":
             gammeltdir = [ gammeltdir ] 
             
         for idx, enmappe in enumerate( gammeltdir): 
+        
+        
+        
             logging.info( ' '.join( [ "Prosesserer mappe", str(idx+1), 'av', str(len(gammeltdir)) ] ) ) 
-            flyttfiler( gammeltdir=enmappe, nyttdir=nyttdir, proxies=proxies, stabildato=stabildato, fjernraretegn=fjernraretegn) 
+            
+            if huggMappeTre:
+                if huggMappeTre == 1: 
+                    logging.info( 'huggMappeTre: Vil ta hver undermappe i katalogen(e) "datadir" for seg' )
+                else:
+                    logging.info( 'huggMappeTre: Vil ta under-underkataloger for ' + str( huggMappeTre) + 
+                                    'nivåer nedover relativt til "datadir"-katalogen(e) for seg' ) 
+            else: 
+                logging.info( "Ingen huggMappeTre - parameter") 
+
+            # flyttfiler( gammeltdir=enmappe, nyttdir=nyttdir, proxies=proxies, stabildato=stabildato, fjernraretegn=fjernraretegn) 
+            finnundermapper( enmappe, huggMappeTre=huggMappeTre, proxies=proxies, 
+                            nyttdir=nyttdir, stabildato=stabildato, fjernraretegn=fjernraretegn )              
+            
+            
+
         logging.info( "FERDIG" + versjoninfo ) 
     
