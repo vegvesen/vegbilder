@@ -969,7 +969,7 @@ def fiksutf8( meta):
 
     kortalfabet = 'abcdefghijklmnopqrstuvwxyz'
     alfabet = kortalfabet + 'æøå'
-    tegn  = '0123456789.,:;-_ *+/++<>\\' 
+    tegn  = '0123456789.,:;-_ *+/++<>\\()' 
     godkjent = tegn + alfabet + alfabet.upper()
     raretegn = False
 
