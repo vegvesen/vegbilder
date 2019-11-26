@@ -888,9 +888,9 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
             if metadata: 
 
                 (metadata, raretegn) = fiksutf8( metadata) 
-                if raretegn: 
-                    logging.info( 'Rare tegn funnet i fil' + fname ) 
-                    count_raretegn += 1 
+                # if raretegn: 
+                    # logging.info( 'Rare tegn funnet i fil' + fname ) 
+                    # count_raretegn += 1 
                 
                 feltmappe = metadata['exif_mappenavn'].split('/')[-1] 
                 strekningsmappe = os.path.join( metadata['mappenavn'], feltmappe) 
@@ -969,7 +969,7 @@ def fiksutf8( meta):
 
     kortalfabet = 'abcdefghijklmnopqrstuvwxyz'
     alfabet = kortalfabet + 'æøå'
-    tegn  = '0123456789.,:;-_ *+/++<>\\()' 
+    tegn  = '0123456789.,:;-_ *+/++<>\\()#?=' 
     godkjent = tegn + alfabet + alfabet.upper()
     raretegn = False
 
@@ -997,6 +997,9 @@ def fiksutf8( meta):
                     raretegn = True 
                 meta[key] = nystr
 
+    # if len(tulletegn) > 0: 
+        # print( "Tulletegn: ", tulletegn) 
+        
     return meta, raretegn
 
 
