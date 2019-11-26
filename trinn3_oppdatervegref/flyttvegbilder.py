@@ -326,6 +326,19 @@ def sjekkfelt( metadata, snuretning='Ikke snudd'):
         
         bildenavn = os.path.join( metadata['exif_strekningreferanse'], metadata['exif_filnavn'] )
 
+        # Hardkoder inn feilhåndtering hvis feltkode mangler helt (f.eks på gangstier) 
+        manglerfelt = False
+        if not isinstance( metadata['feltoversikt'], str): 
+            metadata['feltoversikt'] = "1#2"
+            manglerfelt = True
+ 
+        if not isinstance( metadata['feltoversikt_perbildedato'], str): 
+            metadata['feltoversikt_perbildedato'] = '1#2' 
+            manglerfelt = True
+            
+        if manglerfelt: 
+            logging.warning( 'Ingen feltinformasjon: ' + metadata["temp_gammelfilnavn"] )
+
         muligeFelt = metadata['feltoversikt'].split('#') 
         for felt in muligeFelt: 
             muligFeltNr = int( re.sub( '\D','', felt) )
@@ -451,12 +464,19 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
         (rot, vegnavn, hpnavn, felt, filnavn) = mypathsplit( metadata['temp_gammelfilnavn'], 4)
         
         aar = metadata['exif_dato'][0:4] 
-        fylke = str( metadata['fylke']).zfill(2)
-        
+        if 'fylke' in metadata.keys() and ( isinstance( metadata['fylke'], str) or isinstance( metadata['fylke'], int) ): 
+            fylke = str( metadata['fylke']).zfill(2)
+        else: 
+            fylke = str( metadata['exif_fylke'] ).zfill(2)
+            
         # fjerner eventuelle stedsnavn 
         hpnavn = hpnavn.split('_')[0] 
         
         hpnavn = 'HISTORISK-' + hpnavn 
+        
+        # Knar på vegnavn for å sikre at vi har formen 07_Eg18, ikke 07_EG018
+        vegnavn = knavegnavn(metadata, vegnavn, fylke) 
+        
         nystrekning = '/'.join( [ fylke, aar, vegnavn, hpnavn, felt ] ) 
                 
         stedsnavn = '' # Stedsnavn står allerede i gammelt filnavn, trenger ikke føye det til 2 ganger
@@ -464,6 +484,18 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
     nystrekning = re.sub( '\\\\', '/', nystrekning) 
      
     return (nystrekning, nyttfilnavn, stedsnavn, raretegn) 
+
+def knavegnavn( metadata, vegnavn, fylke): 
+    vegkat = metadata['exif_vegkat'].upper()
+    vegstat = metadata['exif_vegstat'].lower()
+    if vegkat in ['E', 'R']: 
+        mysep = '_'
+    else: 
+        mysep = '-'
+        
+    vegnavn = str(int(fylke)).zfill(2) + mysep + vegkat + vegstat + str(int( metadata['exif_vegnr'] ) )
+
+    return vegnavn 
     
 def mypathsplit( filnavn, antallbiter): 
     """
@@ -844,13 +876,16 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
         jsonfiler = findfiles( 'fy*hp*m*.json', where=mappe) 
         metadata = None
         count = 0 # Debug, mindre datasett
-        for bilde in jsonfiler: 
+        for ii, bilde in enumerate(jsonfiler): 
             fname = os.path.join( mappe, bilde)
+
+            if ii > 0 and ii % 1000 == 0: 
+                logging.info( 'i mappe ' + mappe + ', leser bilde ' + str(ii) + ' av ' + str( len( jsonfiler )) + ' ' + fname )
             
             metadata = lesjsonfil( fname) 
                 
             if metadata: 
-                
+
                 feltmappe = metadata['exif_mappenavn'].split('/')[-1] 
                 strekningsmappe = os.path.join( metadata['mappenavn'], feltmappe) 
                 
