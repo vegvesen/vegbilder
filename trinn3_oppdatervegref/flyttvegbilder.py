@@ -725,7 +725,7 @@ def flyttfiler(gammeltdir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kon
         logging.warning( "Mangler " + str(count_manglerwebpfil) + " webp-filer"  ) 
     logging.info( " ".join( [ "Antall filnavn på ulike steg:", str( len( tempfilnavn)), str( len(ferdigfilnavn)) ]) )
     dt = datetime.now() - t0
-    logging.info( " ".join( [ "Tidsforbruk", str( dt.total_seconds()), 'sekunder' ])) 
+    logging.info( " ".join( [ "Tidsforbruk denne mappen:", str( dt.total_seconds()), 'sekunder' ])) 
 
 def kopierfil( gammelfil, nyfil, ventetid=15): 
     """
@@ -1034,7 +1034,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.7 den 10 nov 2019"
+    versjoninfo = "Flyttvegbilder Versjon 4.8 den 26 nov 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
@@ -1106,6 +1106,7 @@ if __name__ == "__main__":
         if not isinstance( gammeltdir, list): 
             gammeltdir = [ gammeltdir ] 
             
+        t0 = datetime.now()
         for idx, enmappe in enumerate( gammeltdir): 
         
         
@@ -1126,6 +1127,7 @@ if __name__ == "__main__":
                             nyttdir=nyttdir, stabildato=stabildato, fjernraretegn=fjernraretegn )              
             
             
-
+        dt = datetime.now() - t0
+        logging.info( " ".join( [ "Tidsforbruk TOTALT: ", str( dt.total_seconds()), 'sekunder' ])) 
         logging.info( "FERDIG" + versjoninfo ) 
     
