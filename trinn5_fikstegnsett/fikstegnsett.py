@@ -106,7 +106,7 @@ def fikstegnsett_fil( filnavn):
     if True in raretegn: 
         logging.info ('Rare tegn funnet i ' + filnavn ) 
     
-        with open( filnavn + '_fikstegn.json', 'w', encoding='utf-8') as f2:
+        with open( filnavn, 'w', encoding='utf-8') as f2:
             f2.write( rentekst ) 
 
 def fiksfiler( datadir): 
