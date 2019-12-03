@@ -7,6 +7,7 @@ import sys
 import json
 import duallog
 import fnmatch
+import glob
 
 
 def fiksutf8( meta): 
@@ -49,7 +50,7 @@ def fiksutf8( meta):
 def fikslinje( eilinje): 
     kortalfabet = 'abcdefghijklmnopqrstuvwxyz'
     alfabet = kortalfabet + 'æøå'
-    tegn  = '"0123456789.,:;-_ *+/++<>\\()#?=' 
+    tegn  = '"0123456789.,:;-_ *+/++<>\\()#?={}' 
     godkjent = tegn + alfabet + alfabet.upper()
 
     svar = ''
@@ -57,18 +58,21 @@ def fikslinje( eilinje):
     count = 0
     lengde = len( eilinje )
     for bokstav in eilinje: 
-        if bokstav in eilinje: 
+        if bokstav in godkjent: 
             svar += bokstav 
+        elif bokstav == '\n': 
+            pass 
         else: 
             rart = True
             
         count += 1
         if count > 0 and count % 1e7 == 0:
             print( 'Bokstav ' + str( count) + ' av ' + str(  lengde )  + ' ' + str( round( 100* count / lengde, 2) ) + '%'  )
-            
+    
     return (svar, rart)    
     
-def findfiles(which, where='.'):
+    
+def recursive_findfiles(which, where='.'):
     '''
     Returns list of filenames from `where` path matched by 'which'
     shell pattern. Matching is case-insensitive.
@@ -78,23 +82,37 @@ def findfiles(which, where='.'):
     anatoly techtonik <techtonik@gmail.com>
     http://stackoverflow.com/questions/8151300/ignore-case-in-glob-on-linux
 
+    blandet med eks herfra 
+    https://www.bogotobogo.com/python/python_traversing_directory_tree_recursively_os_walk.php 
     EXAMPLES: 
         findfiles('*.ogg')
         findfiles( '*.jpg', where='denne_mappen/undermappe') 
+        
+        
     '''
 
     # TODO: recursive param with walk() filtering
-    rule = re.compile(fnmatch.translate(which), re.IGNORECASE)
-
-    return [name for name in os.listdir(where) if rule.match(name)]
     
+    
+    rule = re.compile(fnmatch.translate(which), re.IGNORECASE)
+    
+    filnavn = []
+    for root, d_names, f_names in os.walk(where): 
+        for name in f_names:
+            if rule.match(name):
+                filnavn.append( os.path.join( root, name) )
+               
+
+    # return [name for name in os.listdir(where) if rule.match(name)]
+    return filnavn    
+
 def fikstegnsett_fil( filnavn): 
     
     rentekst = ''
     
     raretegn = set() 
     
-    with open( filnavn, encoding='utf-8') as f: 
+    with open( filnavn, encoding='utf-8',  errors='ignore') as f: 
         for line in f: 
             lengde = len( line) 
             if lengde  > 1e4: 
@@ -111,12 +129,12 @@ def fikstegnsett_fil( filnavn):
 
 def fiksfiler( datadir): 
     
-    jsonfiler = findfiles( 'fy*hp*m*.json', where=datadir) 
+    jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=datadir) 
     antfiler = len( jsonfiler) 
     logging.info( 'Fant ' + str( antfiler) + ' json-filer i ' + datadir ) 
     
     for eifil in jsonfiler: 
-        fikstegnsett_fil( '/'.join( [ datadir, eifil ] ) ) 
+        fikstegnsett_fil( eifil ) 
     
 
 def finnundermapper( enmappe, huggMappeTre=None, **kwargs):
@@ -145,7 +163,7 @@ if __name__ == '__main__':
     huggMappeTre = False
 
     t0 = datetime.now()
-    versjonsinfo = "Fikstegnsett JSON Versjon 0.1 den 3. des 2019"
+    versjonsinfo = "Fikstegnsett JSON Versjon 1.0 den 3. des 2019"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
@@ -168,6 +186,9 @@ if __name__ == '__main__':
 
             if 'logname' in oppsett.keys():
                 logname = oppsett['logname']
+                
+            if 'huggMappeTre' in oppsett.keys():
+                huggMappeTre = oppsett['huggMappeTre'] 
 
             duallog.duallogSetup( logdir=logdir, logname=logname) 
             logging.info( versjonsinfo ) 
@@ -195,7 +216,7 @@ if __name__ == '__main__':
                         logging.info( 'huggMappeTre: Vil ta hver undermappe i katalogen(e) "datadir" for seg' )
                     else:
                         logging.info( 'huggMappeTre: Vil ta under-underkataloger for ' + str( huggMappeTre) + 
-                                        'nivåer nedover relativt til "datadir"-katalogen(e) for seg' ) 
+                                        ' nivåer nedover relativt til "datadir"-katalogen(e) for seg' ) 
                 else: 
                     logging.info( "Ingen huggMappeTre - parameter") 
 
