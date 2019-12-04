@@ -69,6 +69,11 @@ def fikslinje( eilinje):
         if count > 0 and count % 1e7 == 0:
             print( 'Bokstav ' + str( count) + ' av ' + str(  lengde )  + ' ' + str( round( 100* count / lengde, 2) ) + '%'  )
     
+    if rart: 
+        svar = re.sub( 'Å+', '~', svar)
+        svar = re.sub( 'Æ+', '~', svar)
+        svar = re.sub( '~~+', '~',svar)
+    
     return (svar, rart)    
     
     
@@ -163,7 +168,7 @@ if __name__ == '__main__':
     huggMappeTre = False
 
     t0 = datetime.now()
-    versjonsinfo = "Fikstegnsett JSON Versjon 1.0 den 3. des 2019"
+    versjonsinfo = "Fikstegnsett JSON Versjon 1.0 den 4. des 2019"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
