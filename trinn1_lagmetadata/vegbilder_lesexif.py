@@ -41,6 +41,7 @@ import xml.dom.minidom
 import json 
 import re 
 from datetime import datetime
+from copy import deepcopy
 import fnmatch
 import sys
 import time
@@ -76,6 +77,8 @@ def writeEXIFtoFile(imageFileName,pilImage=None,callersLogger=None):
 
     metadata['bildeuiid'] = str( uuid.uuid4() )
     jsonFileName = imageFileName.with_suffix('.json')
+    metadata = fiksutf8( meta )
+    
     with jsonFileName.open('w', encoding='utf-8') as fw:
         json.dump( metadata, fw, indent=4, ensure_ascii=False)
 
@@ -150,8 +153,10 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
                             
                 # Unik ID for hvert bilde
                 metadata['bildeuiid'] = str( uuid.uuid4() )
-                
-                
+
+                # Fikstegnsett
+                metadata = fiksutf8( metadata)
+                                
                 # Legger viatech-xml'en sist
                 metadata['exif_imageproperties' ] = imageproperties
  
@@ -172,7 +177,45 @@ def indekserbildemappe( datadir, overskrivGammalJson=False ):
     logging.info( ' '.join( [ "Beholdt", str( countAlleredeIndeksert) , "metadata for bilder som allered var prosessert" ] ) )
     logging.info( ' '.join( [ "Overskrev", str( countOverskrevet) , "json-filer med eldre metadata" ] ) )
 
-    
+def fiksutf8( meta): 
+    """
+    Fjerner ugyldige tegn fra datastrukturen før de får gjort mer skade
+    """
+
+    kortalfabet = 'abcdefghijklmnopqrstuvwxyz'
+    alfabet = kortalfabet + 'æøå'
+    tegn  = '0123456789.,:;-_ *+/++<>\\()#?=' 
+    godkjent = tegn + alfabet + alfabet.upper()
+    raretegn = False
+
+    tulletegn = set( ) 
+    # Prøver å fikse tegnsett 
+    if meta and isinstance( meta, dict): 
+        old = deepcopy( meta) 
+        for key, value in old.items():
+            if isinstance( value, str): 
+                nystr = ''
+                rart = False 
+                for bokstav in value: 
+                    if bokstav in godkjent: 
+                        nystr += bokstav
+                    else:
+                       tulletegn.add( bokstav)  
+                       rart = True 
+                       
+                if rart: 
+                    nystr = nystr.replace( 'Æ', '_')
+                    nystr = nystr.replace( 'Å', '_') 
+                    
+                    nystr = re.sub('_{2,}', '_', nystr )
+                    
+                    raretegn = True 
+                meta[key] = nystr
+
+    # if len(tulletegn) > 0: 
+        # print( "Tulletegn: ", tulletegn) 
+        
+    return meta
 
 def findfiles(which, where='.'):
     '''
@@ -419,7 +462,7 @@ if __name__ == '__main__':
     logname='lesexif_' 
     
     
-    versjonsinfo = "Versjon 3.1 den 17. juni 2019 kl 22:37"
+    versjonsinfo = "Versjon 3.2 den 8. desember 2019"
 
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 

@@ -11,6 +11,7 @@ import re
 import glob
 import json
 from datetime import datetime
+from copy import deepcopy
 import sys
 import time
 import logging
@@ -24,6 +25,47 @@ import duallog
 def utledMappenavn( mappe ):
     mapper = mappe.split('/') 
     return '/'.join( mapper[-5:-1]) 
+
+
+def fiksutf8( meta): 
+    """
+    Fjerner ugyldige tegn fra datastrukturen før de får gjort mer skade
+    """
+
+    kortalfabet = 'abcdefghijklmnopqrstuvwxyz'
+    alfabet = kortalfabet + 'æøå'
+    tegn  = '0123456789.,:;-_ *+/++<>\\()#?=' 
+    godkjent = tegn + alfabet + alfabet.upper()
+    raretegn = False
+
+    tulletegn = set( ) 
+    # Prøver å fikse tegnsett 
+    if meta and isinstance( meta, dict): 
+        old = deepcopy( meta) 
+        for key, value in old.items():
+            if isinstance( value, str): 
+                nystr = ''
+                rart = False 
+                for bokstav in value: 
+                    if bokstav in godkjent: 
+                        nystr += bokstav
+                    else:
+                       tulletegn.add( bokstav)  
+                       rart = True 
+                       
+                if rart: 
+                    nystr = nystr.replace( 'Æ', '_')
+                    nystr = nystr.replace( 'Å', '_') 
+                    
+                    nystr = re.sub('_{2,}', '_', nystr )
+                    
+                    raretegn = True 
+                meta[key] = nystr
+
+    # if len(tulletegn) > 0: 
+        # print( "Tulletegn: ", tulletegn) 
+        
+    return meta
 
 
 def recursive_findfiles(which, where='.'):
@@ -226,8 +268,9 @@ def lesjsonfil( filnavn, ventetid=15):
  
         else: 
             anropeMer = False
-        
-     
+
+    # fikser snåle tegn før de får gjort mer skade         
+    meta = fiksutf8( meta )     
 
     return meta 
 
@@ -506,7 +549,7 @@ if __name__ == '__main__':
     huggMappeTre = False
 
     
-    versjonsinfo = "Stedfest vegbilder Versjon 3.5 den 6. nov 2019"
+    versjonsinfo = "Stedfest vegbilder Versjon 3.6 den 8. des 2019"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
