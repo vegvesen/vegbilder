@@ -352,8 +352,9 @@ def sjekkfelt( metadata, snuretning='Ikke snudd'):
                             metadata['feltoversikt'], bildenavn ] ) )
                 
         if not nyFeltKode: 
+            tmp_muligefelt_string = '#'.join( muligeFelt ) 
             logging.warning( ' '.join( [ "Klarte ikke snu feltretning", metadata['exif_feltkode'], 
-                                        'til noe i', muligeFelt,  bildenavn ] ) ) 
+                                        'til noe i', tmp_muligefelt_string,  bildenavn ] ) ) 
             nyFeltKode = metadata['feltoversikt']
         
         metadata['feltkode'] = nyFeltKode
@@ -1037,7 +1038,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.8 den 26 nov 2019"
+    versjoninfo = "Flyttvegbilder Versjon 4.9 den 16 desember 2019"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
