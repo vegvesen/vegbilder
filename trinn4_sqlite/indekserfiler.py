@@ -49,6 +49,7 @@ import requests
 # import xmltodict # Må installeres, rett fram 
 import duallog 
 import sqlite3
+import pdb
 
 
 def recursive_findfiles(which, where='.'):
@@ -308,7 +309,8 @@ def skjemadefinisjon():
                 "strekningsreferanse": "TEXT",
                 "stedfestingdato": "TEXT",
                 "stedfestingdato_numerisk": "INTEGER",
-                "exif_imageproperties": "TEXT"
+                "exif_imageproperties": "TEXT", 
+                "filplassering": "TEXT"  
                 }
 
 
@@ -365,7 +367,7 @@ def skrivmetadataSqlite( sqlitecurs, metadata, tabellnavn, filnavn):
         sqlitecurs.execute( insertsql) 
         
     metadata['indeksert_i_db'] = True
-    skrivjsonfil( filnavn, metadata) 
+    # skrivjsonfil( filnavn, metadata) 
        
     return True 
 
@@ -407,7 +409,7 @@ def berikdata( meta ):
             strek = resultat['vegsystemreferanse']['strekning'] 
             meta['strekning'] = strek['strekning'] 
             meta["delstrekning"] = strek["delstrekning"]
-            meta['arm'] = strek[arm]
+            meta['arm'] = strek['arm']
             meta['adskilte_lop'] = strek["adskilte_løp"]
             meta["trafikantgruppe"] = strek["trafikantgruppe"]
             meta['meterverdi'] = round( strek["meter"] )
@@ -431,6 +433,31 @@ def berikdata( meta ):
 
     meta["vegreferansedato_numerisk"] = int( re.sub( '-', '', meta["vegreferansedato"] ) )
     return meta
+
+def lagfilplassering( meta, filnavn):
+    """
+    Konstruerer stien til bildefila, oppover relativt fra /vegbilder/ - elementet
+    """
+
+    mapper = splitpath(filnavn)
+    filplassering = '/'.join( mapper[-6:])
+    meta['filplassering'] = filplassering
+
+    return meta
+
+def splitpath( filnavn ):
+    """
+    Deler filnavn opp i liste med undermapper + filnavn (siste element i listen)
+    """
+    deling1 = os.path.split( filnavn )
+
+    if deling1[0] == '/' or deling1[0] == '': 
+        mapper = [ filnavn ]
+    else: 
+        mapper = splitpath( deling1[0] )
+        mapper.append( deling1[1])
+
+    return mapper 
     
 def indekser_jsonfiler( mappe, database, gammel_database=None ):
     t0 = datetime.now()
@@ -454,7 +481,11 @@ def indekser_jsonfiler( mappe, database, gammel_database=None ):
         count += 1 
         meta = lesjsonfil( filnavn) 
 
+        if count == 10 or count == 50 or count % 250 == 0: 
+            logging.info( 'Indekserer bilde ' + str( count ) + ' av ' + str( len( jsonfiler)) )
+
         if meta: 
+            meta = lagfilplassering(meta, filnavn)
             (meta, raretegn) = fiksutf8( meta) 
             if raretegn and count_raretegn < 2: 
                 logging.info( 'Rare tegn funnet i fil' + filnavn) 
@@ -486,18 +517,14 @@ def indekser_jsonfiler( mappe, database, gammel_database=None ):
         gmlsqlite_conn.commit()
         gmlsqlite_conn.close()
     
-    # dt = datetime.now() - t0
-    # logging.info( ' '.join( [ 'Indekserte', str( count_suksess ) , 'av', 
-                                # str( len(jsonfiler)), 'vegbilder på', 
-                                # str( dt.total_seconds()), 'sekunder' ] ) ) 
+    dt = datetime.now() - t0
+    logging.info( ' '.join( [ 'Indekserte', str( count_suksess ) , 'av', 
+                                str( len(jsonfiler)), 'vegbilder på', 
+                                str( dt.total_seconds()), 'sekunder' ] ) ) 
                                 
-    # diff = len(jsonfiler) - count_suksess
-    # if diff > 0: 
-        # logging.info( 'Hoppet over ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
-
-    # diff = count - count_suksess
-    # if diff > 0: 
-        # logging.warning( 'Indeksering FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
+    diff = count - count_suksess
+    if diff > 0: 
+        logging.warning( 'Indeksering FEILET for ' + str( diff) + ' av ' + str( len( jsonfiler) ) + ' vegbilder' ) 
         
     # if count_fatalt > 0: 
         # logging.error( 'Stedfesting FEILET med ukjent feilsituasjon for ' + str( count_fatalt) + ' vegbilder' ) 
@@ -522,8 +549,6 @@ def findfiles(which, where='.'):
 
     return [name for name in os.listdir(where) if rule.match(name)]
     
-
-
     
 if __name__ == '__main__': 
 
