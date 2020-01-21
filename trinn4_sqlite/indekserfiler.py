@@ -451,7 +451,7 @@ def splitpath( filnavn ):
     """
     deling1 = os.path.split( filnavn )
 
-    if deling1[0] == '/' or deling1[0] == '': 
+    if deling1[0] == '/' or deling1[0] == '' or deling1[1] == '': 
         mapper = [ filnavn ]
     else: 
         mapper = splitpath( deling1[0] )
