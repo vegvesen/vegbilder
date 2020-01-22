@@ -439,22 +439,28 @@ def lagfilplassering( meta, filnavn):
     Konstruerer stien til bildefila, oppover relativt fra /vegbilder/ - elementet
     """
 
-    mapper = splitpath(filnavn)
-    filplassering = '/'.join( mapper[-6:])
+    mapper = splitpath(filnavn, 8)
+    if len( mapper ) < 7:
+        logging.warn( "Klarer ikke dele opp filplassering i undermapper: " + filnavn )
+        filplassering = '/'.join( mapper )
+    else: 
+        filplassering = '/'.join( mapper[-6:])
+    
     meta['filplassering'] = filplassering
 
     return meta
 
-def splitpath( filnavn ):
+def splitpath( filnavn, recdybde ):
     """
     Deler filnavn opp i liste med undermapper + filnavn (siste element i listen)
     """
     deling1 = os.path.split( filnavn )
+    recdybde -= 1
 
-    if deling1[0] == '/' or deling1[0] == '' or deling1[1] == '': 
+    if deling1[0] == '/' or deling1[0] == '' or deling1[1] == '' or recdybde == 0: 
         mapper = [ filnavn ]
     else: 
-        mapper = splitpath( deling1[0] )
+        mapper = splitpath( deling1[0], recdybde )
         mapper.append( deling1[1])
 
     return mapper 
