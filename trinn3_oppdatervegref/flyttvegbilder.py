@@ -853,6 +853,24 @@ def lesjsonfil( filnavn, ventetid=15):
     return meta 
 
 
+def utledMappenavn( mappe ):
+    mapper = splitpath( mappe, 6) 
+    return '/'.join( mapper[-5:-1]) 
+
+def splitpath( filnavn, recdybde ):
+    """
+    Deler filnavn opp i liste med undermapper + filnavn (siste element i listen)
+    """
+    deling1 = os.path.split( filnavn )
+    recdybde -= 1
+
+    if deling1[0] == '/' or deling1[0] == '' or deling1[1] == '' or recdybde == 0: 
+        mapper = [ filnavn ]
+    else: 
+        mapper = splitpath( deling1[0], recdybde )
+        mapper.append( deling1[1])
+
+    return mapper
 
 def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm', 
                         proxies='', stabildato='1949-12-31'): 
@@ -892,7 +910,12 @@ def lesfiler_nystedfesting(datadir='../bilder/regS_orginalEv134/06/2018/06_Ev134
                 # if raretegn: 
                     # logging.info( 'Rare tegn funnet i fil' + fname ) 
                     # count_raretegn += 1 
-                
+
+                # Mangler vi mappenavn? Snålt, fiks det! 
+                if not 'mappenavn' in metadata.keys():
+                    metadata['mappenavn'] = utledMappenavn( mappe )
+                    logging.warning( 'Mappenavn mangler i json-fil, opprettet dynamisk ' + fname) 
+
                 feltmappe = metadata['exif_mappenavn'].split('/')[-1] 
                 strekningsmappe = os.path.join( metadata['mappenavn'], feltmappe) 
                 
@@ -1038,7 +1061,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 4.9 den 16 desember 2019"
+    versjoninfo = "Flyttvegbilder Versjon 5.0 den 3. februar 2020"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
