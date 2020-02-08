@@ -417,28 +417,29 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
         else: 
             hp = str(metadata['hp']).zfill(3)
         
-        hptekst = 'hp' + hp
+        hptekst = 'hp' + hp + '_'
         
         # Deler opp navn av typen 06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm 
-        # og plukker ut navne-biten av 
+        # og plukker ut navne-biten av
+        # BURDE KUNNE SLETTE DENNE ? 
         hpbit = metadata['exif_strekningreferanse'].split('/')[1]
         (stedsnavn, raretegn) = plukkstedsnavn( hpbit, fjernraretegn=fjernraretegn ) 
         
-        
-
-        vegnr = metadata['vegkat'].upper() + metadata['vegstat'].lower() + \
-                    str( metadata['vegnr'] ) 
+ 
         
         # E, R skal ha - mellom fylke og vegkat, mens F skal ha _
         # Dette for at sortering i filutforsker skal liste E, R før F
-        if metadata['vegkat'].upper() in [ 'E', 'R']:         
+        # Vi skal også ha tre siffer i E og R - veger
+        vegnummer = str( metadata['vegnr'] )
+        if metadata['vegkat'].upper() in [ 'E', 'R']:
+            vegnummer = vegnummer.zfill(3)
+            vegnr = metadata['vegkat'].upper() + metadata['vegstat'].lower() + vegnummer
             vegnavn = '_'.join( [ fylke, vegnr ]) 
-        else: 
+        else:
+            vegnr = metadata['vegkat'].upper() + metadata['vegstat'].lower() + vegnummer 
             vegnavn = '-'.join( [ fylke, vegnr ]) 
             
-        
         rotnavn = os.path.join( fylke, aar, vegnavn, hptekst) 
-        
         
         ## Blir bare kluss med stedsnavn for strekninger 
         # if stedsnavn: 
@@ -1061,7 +1062,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 5.0 den 3. februar 2020"
+    versjoninfo = "Flyttvegbilder Versjon 5.1 den 7. februar 2020"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
