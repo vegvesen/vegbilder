@@ -417,6 +417,7 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
         else: 
             hp = str(metadata['hp']).zfill(3)
         
+        # Nødvendig for at NVDB 123 ikke skal få hikke 
         hptekst = 'hp' + hp + '_'
         
         # Deler opp navn av typen 06_Ev134/Hp07_Kongsgårdsmoen_E134_X_fv__40_arm 
@@ -457,6 +458,9 @@ def lag_strekningsnavn( metadata, fjernraretegn=True):
         
         nystrekning = os.path.join( nystrekning, '_'.join( [felt, dato] ) )
         nyttfilnavn = '_'.join( [   'Fy' + vegnavn, hptekst, felt, 'm' + str( round( metadata['meter'] )).zfill(5) ] )
+
+        # Fjerner dobbeltforekomst av _ 
+        nyttfilnavn = nyttfilnavn.replace('__', '_')
     
     else: 
         # Returnerer det gamle navnet på streking og filnavn
