@@ -52,7 +52,7 @@ import sqlite3
 import pdb
 
 
-def recursive_findfiles(which, where='.'):
+def recursive_findfiles(which, mappe='.'):
     '''
     Returns list of filenames from `where` path matched by 'which'
     shell pattern. Matching is case-insensitive.
@@ -76,11 +76,16 @@ def recursive_findfiles(which, where='.'):
     rule = re.compile(fnmatch.translate(which), re.IGNORECASE)
     
     filnavn = []
-    for root, d_names, f_names in os.walk(where): 
+    for root, d_names, f_names in os.walk(mappe): 
         for name in f_names:
             if rule.match(name):
                 filnavn.append( re.sub( '\\\\', '/', os.path.join( root, name) ) )
     
+        # Traverserer mapper: 
+        for eimappe in d_names: 
+            flerefiler = recursive_findfiles( which, mappe= '/'.join( [mappe,  eimappe ] ) )
+            filnavn.extend( flerefiler )
+
     return filnavn
     
     
@@ -467,7 +472,8 @@ def splitpath( filnavn, recdybde ):
     
 def indekser_jsonfiler( mappe, database, gammel_database=None ):
     t0 = datetime.now()
-    jsonfiler = recursive_findfiles( 'fy*hp*m*.json', where=mappe) 
+    jsonfiler = recursive_findfiles( 'fy*hp*m*.json', mappe=mappe) 
+
     count = 0
     count_suksess = 0 
     count_fatalt = 0 
@@ -563,7 +569,7 @@ if __name__ == '__main__':
     logdir = 'log' 
     logname='indekservegbilder_' 
     
-    versjonsinfo = "Indekser vegbilder Versjon 0.1 den 20. okt 2019"
+    versjonsinfo = "Indekser vegbilder Versjon 1.1 den 24.2.2020"
     print( versjonsinfo ) 
     if len( sys.argv) < 2: 
 
