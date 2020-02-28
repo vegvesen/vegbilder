@@ -499,7 +499,7 @@ def knavegnavn( metadata, vegnavn, fylke):
     else: 
         mysep = '-'
         
-    vegnavn = str(int(fylke)).zfill(2) + mysep + vegkat + vegstat + str(int( metadata['exif_vegnr'] ) )
+    vegnavn = str(int(fylke)).zfill(2) + mysep + vegkat + vegstat + str(int( re.sub( "[^0-9]", "", metadata['exif_vegnr'] ) ) )
 
     return vegnavn 
     
@@ -1066,7 +1066,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 5.1 den 7. februar 2020"
+    versjoninfo = "Flyttvegbilder Versjon 5.2 den 28. februar 2020"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
