@@ -355,8 +355,16 @@ def sjekkfelt( metadata, snuretning='Ikke snudd'):
             tmp_muligefelt_string = '#'.join( muligeFelt ) 
             logging.warning( ' '.join( [ "Klarte ikke snu feltretning", metadata['exif_feltkode'], 
                                         'til noe i', tmp_muligefelt_string,  bildenavn ] ) ) 
-            nyFeltKode = metadata['feltoversikt']
-        
+            if not '#' in metadata['feltoversikt']: 
+                nyFeltKode = metadata['feltoversikt']
+            elif 'feltkode' in metadata.keys(): 
+                nyFeltKode = metadata['feltkode']
+            else: 
+                nyFeltKode = metadata['exif_feltkode']
+            
+            logging.warning( ' '.join( [ "Klarte ikke snu feltretning", metadata['exif_feltkode'], 
+                                        'til noe i', tmp_muligefelt_string,  bildenavn, '\n\t => Angir felt:', nyFeltKode, bildenavn ] ) ) 
+
         metadata['feltkode'] = nyFeltKode
         
     return metadata
@@ -1066,7 +1074,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 5.2 den 28. februar 2020"
+    versjoninfo = "Flyttvegbilder Versjon 5.3 den 1. april 2020"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
