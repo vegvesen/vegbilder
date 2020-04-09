@@ -344,12 +344,25 @@ def sjekkfelt( metadata, snuretning='Ikke snudd'):
             muligFeltNr = int( re.sub( '\D','', felt) )
             muligFeltType = re.sub( '\d+', '', felt) 
  
-            if etterlystFeltNr == muligFeltNr: 
+            # Streng logikk - felttype må stemme 
+            if etterlystFeltNr == muligFeltNr and muligFeltType == gmlFeltType: 
                 nyFeltKode = felt 
-                if gmlFeltType != muligFeltType: 
-                    logging.warning( ' '.join( [ 'Mismatch felttype når vi snur retning', 
-                            metadata['exif_feltkode'], '=>', nyFeltKode, 'av mulige', 
-                            metadata['feltoversikt'], bildenavn ] ) )
+
+        # Hvis streng feltkode-logikk feiler: Slappere logikk med advarsel: 
+        if not nyFeltKode: 
+
+            for felt in muligeFelt: 
+                muligFeltNr = int( re.sub( '\D','', felt) )
+                muligFeltType = re.sub( '\d+', '', felt) 
+    
+                # Streng logikk - felttype må stemme 
+                if etterlystFeltNr == muligFeltNr: 
+                    nyFeltKode = felt 
+
+                    if gmlFeltType != muligFeltType: 
+                        logging.warning( ' '.join( [ 'Mismatch felttype når vi snur retning', 
+                                metadata['exif_feltkode'], '=>', nyFeltKode, 'av mulige', 
+                                metadata['feltoversikt'], bildenavn ] ) )
                 
         if not nyFeltKode: 
             tmp_muligefelt_string = '#'.join( muligeFelt ) 
@@ -364,6 +377,7 @@ def sjekkfelt( metadata, snuretning='Ikke snudd'):
             
             logging.warning( ' '.join( [ "Klarte ikke snu feltretning", metadata['exif_feltkode'], 
                                         'til noe i', tmp_muligefelt_string,  bildenavn, '\n\t => Angir felt:', nyFeltKode, bildenavn ] ) ) 
+
 
         metadata['feltkode'] = nyFeltKode
         
@@ -1074,7 +1088,7 @@ if __name__ == "__main__":
                 # nyttdir='vegbilder/testbilder_prosessert/ny_stedfesting')
 
 
-    versjoninfo = "Flyttvegbilder Versjon 5.3 den 1. april 2020"
+    versjoninfo = "Flyttvegbilder Versjon 5.4 den 9. april 2020"
     print( versjoninfo ) 
     if len( sys.argv) < 2: 
         print( "BRUK:\n")
