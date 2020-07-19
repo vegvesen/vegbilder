@@ -21,6 +21,14 @@ exif_kvalitet:
 Lage logikk hvor jeg føyer på et desimaltall som angir hvor mye informasjon som jeg har føyd til, og hva som evt mangler. Færrest mulig kvalitetsvarianter! 
 
 
+# Uavklarte spm, alfaversjon sluttkontroll
 
+Har laget en alfaversjon som leser JSON-filer og sjekker om de har samme struktur som skjema. Denne siste kvalitetssjekken blir siste ledd i en prosesseringskjede _(to be written)_ som korrigerer for kjente feil og mangler, **dvs en form for sluttkontroll.**
 
+  * [ ] Hva skjer når filene ikke går gjennom sluttkontroll? Logge som feil, eller katastrofalt crash?
+  * [ ] Skal sluttkontrollen godta at filer kan ha  **flere elementer** enn det som er definert i skjema? Hvis nei - Logges som feil, som advarsel eller katastrofal stans? 
 
+# Dataflyt spm
+
+  * [ ] Kan vi gjenbruke _huggmappetre_ - logikken og øvrig flbehandling-logikk fra den koden jeg skrev for gammel prosesseringskjede?
+  * [ ] Er det ting vi absolutt IKKE bør gjenbruke fra gammel prosesseringskjede? 
