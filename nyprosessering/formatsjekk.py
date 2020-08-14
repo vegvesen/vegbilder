@@ -1,13 +1,15 @@
 # Standard library 
 import json
 import logging
+import os 
+from pathlib import Path
 
 # Well known 3rd party libraries
 
 # Custom libraries
 import duallog
-from flyttvegbilder import lesjsonfil
-from flyttvegbilder import findfiles
+from flyttvegbilder_v54 import lesjsonfil
+from flyttvegbilder_v54 import findfiles, kopierfil
 
 def sjekktagger( jsonmal, jsondata, filnavn ):
     """
@@ -33,7 +35,31 @@ def sjekktagger( jsonmal, jsondata, filnavn ):
         assert akey in jsonmal.keys(), ' '.join( [ 'SKJEMAFEIL Ekstra element', 
                             akey, 'i jsonfil', filnavn ] ) 
                             
-                            
+def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir', logname='test_loggnavn' ):
+    """
+    Kjører gjennom testdata
+
+    Kopierer mappen med testdata til en midlertidig katalog (som overskrives, hvis den finnes fra før). 
+    Anvender deretter alle kvalitetssikrings / kvalitetsheving-rutiner på testdata. 
+    """
+
+    duallog.duallogSetup( logdir=logdir, logname=logname) 
+
+
+
+    testfiler = findfiles( '*', testdata )
+
+
+
+    logging.info( 'Forbereder test\n========')
+
+    Path(  tempdir ).mkdir( parents=True, exist_ok=True )
+    for eifil in testfiler: 
+        logging.info( 'Kopierer testfil: ' + eifil )
+        (rot, filnavn) = os.path.split( eifil )
+        kopierfil( eifil, tempdir + '/' + filnavn )
+
+
                             
 if __name__ == '__main__': 
 
