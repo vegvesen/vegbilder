@@ -64,7 +64,7 @@ Ferdig prosesserte data blir  brukt som argument til kvalitetskontrollen.
 
 ## Del 3: Kvalitetskontroll
 
-| Funksjonsnavn | `Ikke avgjort`|
+| Funksjonsnavn | `kvalitetskontroll`|
 |----|:------|
 |Argument| dict med ferdig prosesserte data    |
 |      | dict med fasit (leses fra fil, men trenger kun lese 1 gang...) |
