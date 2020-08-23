@@ -4,6 +4,8 @@ import logging
 import os 
 from pathlib import Path
 
+import pdb
+
 # Well known 3rd party libraries
 
 # Custom libraries
@@ -23,17 +25,40 @@ def sjekktagger( jsonmal, jsondata, filnavn ):
         filnavn - Filnavn til jsondata. Brukes til logging
     """
     
-    # Sjekker at alle påkrevde tagger finnes
-    for akey in jsonmal.keys(): 
-    
-        assert akey in jsondata.keys(), ' '.join( [  
-                'SKJEMAFEIL Mangler', akey, 'elementet i', filnavn ] ) 
-    
-    # Sjekker om det finnes overflødige tagger
+
+    # Sjekker at alle påkrevde tagger finnes, evt duplikater
+    mal_keys = set( jsonmal )
+    data_keys = set( )
+    duplicate_keys = set( )
     for akey in jsondata.keys(): 
-    
-        assert akey in jsonmal.keys(), ' '.join( [ 'SKJEMAFEIL Ekstra element', 
-                            akey, 'i jsonfil', filnavn ] ) 
+        if akey in data_keys: 
+            duplicate_keys.add( akey)
+        else: 
+            data_keys.add( akey )
+
+    # Har vi duplikater? 
+    assert len( duplicate_keys ) == 0, ' '.join( ['skjemafeil DUBLETT',  *duplicate_keys, filnavn] )
+
+    # Mangler vi noen tagger? 
+    diff1 = mal_keys - data_keys
+    assert len( diff1 ) == 0, ' '.join( ['skjemafeil MANGLER tagg',  *diff1, filnavn] )
+
+    # Overflødige tagger? 
+    diff2 = data_keys - mal_keys
+    assert len( diff2 ) == 0, ' '.join( ['skjemafeil EKSTRA tagg',  *diff2, filnavn] )
+
+def kvalitetskontroll( jsonmal, jsondata, filnavn): 
+    """
+    Kvalitetskontroll av ferdige prosesserte data 
+
+    ARGUMENTS
+        jsonmal - dictionary som vi sammenligner med
+        
+        jsondata - dictionary som skal kvalitetssjekkes
+        
+        filnavn - Filnavn til jsondata. Brukes til logging
+    """
+    sjekktagger( jsonmal, jsondata, filnavn)
                             
 def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir', logname='test_loggnavn' ):
     """
@@ -44,13 +69,7 @@ def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir',
     """
 
     duallog.duallogSetup( logdir=logdir, logname=logname) 
-
-
-
     testfiler = findfiles( '*', testdata )
-
-
-
     logging.info( 'Forbereder test\n========')
 
     Path(  tempdir ).mkdir( parents=True, exist_ok=True )
@@ -59,6 +78,17 @@ def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir',
         (rot, filnavn) = os.path.split( eifil )
         kopierfil( eifil, tempdir + '/' + filnavn )
 
+    kopiertefiler = findfiles( '*.json', tempdir)
+    # Les mal for json-filer
+    jsonmal = lesjsonfil( 'vegbildejson_mal.json', ventetid=15) 
+
+    for filnavn in kopiertefiler: 
+        jsondata = lesjsonfil( filnavn, ventetid=15) 
+
+        try: 
+            kvalitetskontroll( jsonmal, jsondata, filnavn) 
+        except AssertionError as myErr: 
+            logging.error( str( myErr) ) 
 
                             
 if __name__ == '__main__': 
@@ -67,8 +97,7 @@ if __name__ == '__main__':
     logname = 'test_loggnavn'
     duallog.duallogSetup( logdir=logdir, logname=logname) 
 
-    with open( 'vegbildejson_mal.json', encoding='utf-8') as f: 
-        jsonmal = json.load( f) 
+    jsonmal = lesjsonfil( 'vegbildejson_mal.json' )
 
     mappenavn = 'testdata/'
     jsonfiler = findfiles( '*.json', mappenavn) 
@@ -76,6 +105,6 @@ if __name__ == '__main__':
         jsondata = lesjsonfil( filnavn, ventetid=15) 
     
         try: 
-            sjekktagger( jsonmal, jsondata, filnavn) 
+            kvalitetskontroll( jsonmal, jsondata, filnavn) 
         except AssertionError as myErr: 
             logging.error( str( myErr) ) 

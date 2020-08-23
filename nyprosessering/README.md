@@ -30,5 +30,45 @@ Har laget en alfaversjon som leser JSON-filer og sjekker om de har samme struktu
 
 # Dataflyt spm
 
-  * [ ] Kan vi gjenbruke _huggmappetre_ - logikken og øvrig flbehandling-logikk fra den koden jeg skrev for gammel prosesseringskjede?
-  * [ ] Er det ting vi absolutt IKKE bør gjenbruke fra gammel prosesseringskjede? 
+  * [x] Kan vi gjenbruke _huggmappetre_ - logikken og øvrig flbehandling-logikk fra den koden jeg skrev for gammel prosesseringskjede? **JA** 
+  * [x] Er det ting vi absolutt IKKE bør gjenbruke fra gammel prosesseringskjede? **Tror ikke det, bare plukk det vi trenger?**
+  
+-----------------------------
+
+# Forslag dataflyt 
+
+Bygg opp koden rundt disse hoveddelene: 
+1. **Finn** alle json-filer i en katalog (fullstendig mappe- og filnavn). Bruk `huggmappetre` for å unngå å lese millionvis av filer samtidig. 
+1. **Prosesser** hver av disse filene. Hvis nødvendig og mulig: Fiks opp manglende data, og juster kvalitetsparameter. 
+1. **Kvalitetskontroll** Grundig kvalitetskontroll  
+
+## Del 1: Finn JSON-filer 
+
+| Funksjonsnavn | `Ikke avgjort` | 
+|----|-----| 
+| Argument | Mappenavn 
+| | `huggmappetre` - parametre. 
+
+Grei sak, bruk gammel kode, trolig helt uten endringer. Hvert enkelt filnavn brukes som argument til feilretting-prosessen 
+
+## Del 2: Prosesser 
+
+
+| Funksjonsnavn | `Ikke avgjort`|
+|----|------|
+|Argument| Filnavn på jsonfil    |
+
+Gjenbruk biter av gammel kode. Behandler en og en JSON-fil. Kun evt endringer blir skrevet til fil (overskriver det som ligger fra før). 
+
+Ferdig prosesserte data blir  brukt som argument til kvalitetskontrollen. 
+
+## Del 3: Kvalitetskontroll
+
+| Funksjonsnavn | `Ikke avgjort`|
+|----|:------|
+|Argument| dict med ferdig prosesserte data    |
+|      | dict med fasit (leses fra fil, men trenger kun lese 1 gang...) |
+|      | filnavn (for json-fil) |  
+
+
+
