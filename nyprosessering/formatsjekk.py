@@ -51,7 +51,38 @@ def sjekktagger( jsondata, filnavn ):
     diff2 = data_keys - mal_keys
     assert len( diff2 ) == 0, ' '.join( ['skjemafeil EKSTRA tagg',  *diff2, filnavn] )
 
-def sjekktagg( jsondata, taggnavn, taggtype ): 
+
+def sjekk_alle_egenskaper( jsondata, kun_paakrevd=True ): 
+    """
+    Sjekker om alle (påkrevde) egenskapverdier har rett datatype 
+
+    ARGUMENTS
+        jsondata - data som skal sjekkes
+
+
+    KEYWORDS
+        kun_paakrevd=True (default) Sjekker kun obligatoriske verdier, dvs de som har verdien skalHa=True i 
+        malen / skjemaet du får fra funksjonen vegbildejsonmal 
+
+    RETURNS
+        Tomt tekstfelt hvis alle sjekkene godtas, evt navnet på alle egenskapverdier som feiler
+    """
+
+    jsonmal = vegbildejsonmal()
+    returnValue = ''
+    feiler = []
+    for taggnavn in jsonmal.keys(): 
+
+        if not kun_paakrevd or jsonmal[taggnavn]['skalha']: 
+            if not sjekkegenskapverdi( jsondata, taggnavn, jsonmal[taggnavn]['type']): 
+                feiler.append( taggnavn)
+
+    if len( feiler ) > 0: 
+        returnValue = ', '.join( feiler )
+
+    return returnValue
+
+def sjekkegenskapverdi( jsondata, taggnavn, taggtype ): 
     """
     Sjekker om en taggen har fornuftig verdi og datatype 
 
@@ -62,14 +93,15 @@ def sjekktagg( jsondata, taggnavn, taggtype ):
 
         taggtype - Navn på  datatype som skal valideres ('int', 'str', 'float', ...)
 
-    Ekstra valideringsregler (regex, numerisk verdi etc) føyes på som nøkkelord-parametre
+    Ekstra valideringsregler (regex, numerisk verdi etc) kan føyes på som nye nøkkelord-parametre. 
+    F.eks regex-setninger 
     
     https://stackoverflow.com/questions/11775460/lexical-cast-from-string-to-type
     """
 
-    retval = False 
+    returnValue = False 
 
-    # Finnes og har noe annet enn None-verdi: 
+    # Taggen finnes og har noe annet enn None-verdi: 
     if taggnavn in jsondata and jsondata[taggnavn]: 
 
         datatype = locate( taggtype )
@@ -91,27 +123,27 @@ def sjekktagg( jsondata, taggnavn, taggtype ):
 
             # Evt ekstra valideringsregler for tekst (regex?) føyes til her
             # Blir i så fall et nytt nøkkelord-parameter (evt flere) 
-            retval = True 
+            returnValue = True 
 
         # Sjekker at vi ikke har flyttallverdi der vi skal ha heltall 
         # Float-verdier numerisk identisk med heltall godtas, dvs 1.0 == 1
         elif taggtype == 'int': 
             if (isinstance( rawdata, float) or isinstance( rawdata, int)) and rawdata == data: 
-                retval = True 
-            elif isinstance( rawdata, str) and int( rawdata) == data: 
-                retval == True 
+                returnValue = True 
+            elif isinstance( rawdata, str) and data and float( rawdata) == data: 
+                returnValue = True 
                 
         # Gyldig dato? 
         elif taggtype in [ 'date', 'datetime' ] and isinstance( data, datetime): 
-            retval = True
+            returnValue = True
             
         # Alt mulig anna? Har iallfall den datatypen vi skal ha?
         elif isinstance( data, datatype): 
-            retval = True 
+            returnValue = True 
 
-    return retval 
+    return returnValue 
 
-def kvalitetskontroll( jsondata, filnavn): 
+def kvalitetskontroll( jsondata, filnavn, kun_paakrevd=True): 
     """
     Kvalitetskontroll av ferdige prosesserte data 
 
@@ -121,8 +153,18 @@ def kvalitetskontroll( jsondata, filnavn):
         jsondata - dictionary som skal kvalitetssjekkes
         
         filnavn - Filnavn til jsondata. Brukes til logging
+
+    
+    KEYWORDS
+        kun_paakrevd=True (default) Sjekker kun obligatoriske verdier, dvs de som har verdien skalHa=True i 
+        malen / skjemaet du får fra funksjonen vegbildejsonmal 
+
+    RETURNS
+        Ingen returverdier, men assert vil kaste AssertionError når sjekkene feiler
     """
     sjekktagger( jsondata, filnavn)
+    egenskapsjekk = sjekk_alle_egenskaper( jsondata, kun_paakrevd=kun_paakrevd)
+    assert egenskapsjekk == '', ' '.join( ['Feil dataverdier/datatyper',  egenskapsjekk,  filnavn ] )
                             
 def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir', logname='test_loggnavn' ):
     """
@@ -217,6 +259,6 @@ if __name__ == '__main__':
         jsondata = lesjsonfil( filnavn, ventetid=15) 
     
         try: 
-            kvalitetskontroll( jsondata, filnavn) 
+            kvalitetskontroll( jsondata, filnavn, kun_paakrevd=True) 
         except AssertionError as myErr: 
             logging.error( str( myErr) ) 
