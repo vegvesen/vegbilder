@@ -67,7 +67,6 @@ Ferdig prosesserte data blir  brukt som argument til kvalitetskontrollen.
 | Funksjonsnavn | `kvalitetskontroll`|
 |----|:------|
 |Argument| dict med ferdig prosesserte data    |
-|      | dict med fasit (leses fra fil, men trenger kun lese 1 gang...) |
 |      | filnavn (for json-fil) |  
 
 

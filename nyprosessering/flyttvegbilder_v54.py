@@ -24,7 +24,7 @@ import glob
 
 
 import requests
-import xmltodict
+# import xmltodict
 
 import duallog
 
