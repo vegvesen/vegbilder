@@ -55,7 +55,8 @@ def duallogSetup(logdir='log', logname='mylog'):
     # I så fall skal vi ikke klusse med dem, men respektere at andre funksjoner kan 
     # ha satt opp sitt eget system. 
     if len(  logger.handlers) > 0: 
-        logger.info( "duallog.duallogSetup: Logger finnes fra før, klusser ikke med den" ) 
+        pass 
+        # logger.info( "duallog.duallogSetup: Logger finnes fra før, klusser ikke med den" ) 
     else: 
 
         logger.setLevel(logging.INFO)

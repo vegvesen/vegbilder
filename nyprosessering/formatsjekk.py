@@ -317,6 +317,11 @@ def prosesser( filnavn, dryrun=False ):
         senterlinjeposisjon 
     """
 
+    logdir  = 'loggdir'
+    logname = 'loggnavn'
+    duallog.duallogSetup( logdir=logdir, logname=logname) 
+
+
     fiksa = 0 
     skrevet = 0
     jsondata = lesjsonfil( filnavn, ventetid=1)
@@ -340,6 +345,11 @@ def prosesser( filnavn, dryrun=False ):
         logging.info( 'Prosessering - retta mangler: ' + filnavn)
         skrevet = 1
     
+    try: 
+        kvalitetskontroll( jsondata, filnavn )
+    except AssertionError as myErr: 
+        logging.error( str( myErr) ) 
+
     return skrevet
 
 
@@ -560,6 +570,11 @@ def prosessermappe( mappenavn, **kwargs ):
         Nada 
     """
 
+    logdir  = 'loggdir'
+    logname = 'loggnavn'
+    duallog.duallogSetup( logdir=logdir, logname=logname) 
+
+
     filer = finnfiltype(mappenavn)
 
     logging.info( 'Prosessermappe- klar til å prosessere ' + str( len(filer)) +  ' metadata-filer under ' + mappenavn)
@@ -589,6 +604,11 @@ def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
     RETURNS: 
         Nada 
     """
+    logdir  = 'loggdir'
+    logname = 'loggnavn'
+    duallog.duallogSetup( logdir=logdir, logname=logname) 
+
+
 
     if huggMappeTre: 
     
@@ -608,12 +628,8 @@ def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
 
 if __name__ == '__main__': 
 
-    logdir  = 'test_loggdir'
-    logname = 'test_loggnavn'
-    duallog.duallogSetup( logdir=logdir, logname=logname) 
-
-    # testing( )
+    testing( )
     # prosessermappe( 'testmappetre', dryrun=True)
-    finnundermapper( 'testmappetre', huggMappeTre=2, dryrun=False)
+    # finnundermapper( 'testmappetre', huggMappeTre=2, dryrun=False)
    
     #     fiksa = prosesser( filnavn, dryrun=True)
