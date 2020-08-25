@@ -6,6 +6,7 @@ from pathlib import Path
 from pydoc import locate
 from datetime import datetime
 import dateutil.parser
+import requests 
 
 import pdb
 
@@ -32,16 +33,7 @@ def sjekktagger( jsondata, filnavn ):
     # Sjekker at alle påkrevde tagger finnes, evt duplikater
     jsonmal = vegbildejsonmal()
     mal_keys = set( jsonmal )
-    data_keys = set( )
-    duplicate_keys = set( )
-    for akey in jsondata.keys(): 
-        if akey in data_keys: 
-            duplicate_keys.add( akey)
-        else: 
-            data_keys.add( akey )
-
-    # Har vi duplikater? 
-    assert len( duplicate_keys ) == 0, ' '.join( ['skjemafeil DUBLETT',  *duplicate_keys, filnavn] )
+    data_keys = set( jsondata )
 
     # Mangler vi noen tagger? 
     diff1 = mal_keys - data_keys
@@ -188,11 +180,25 @@ def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir',
     # Les mal for json-filer
     jsonmal = vegbildejsonmal( ) 
 
+
+    # QA, orginalfiler
+    testfiler = findfiles( '*.json', testdata)
+    logging.info( '##############################\n\nQA ubearbeidede data\n')
+    for filnavn in testfiler: 
+        jsondata = lesjsonfil( filnavn, ventetid=1)
+        try: 
+            kvalitetskontroll( jsondata, filnavn) 
+        except AssertionError as myErr: 
+            logging.error( str( myErr) ) 
+
+    logging.info( '\n###########################\n\nProsessering...\n')
+
+    logging.info( '\n###########################\n\nQA prosesserte data...\n')
     for filnavn in kopiertefiler: 
-        jsondata = lesjsonfil( filnavn, ventetid=15) 
+        jsondata = lesjsonfil( filnavn, ventetid=1) 
 
         try: 
-            kvalitetskontroll( jsonmal, jsondata, filnavn) 
+            kvalitetskontroll( jsondata, filnavn) 
         except AssertionError as myErr: 
             logging.error( str( myErr) ) 
 
@@ -246,7 +252,100 @@ def vegbildejsonmal( ):
         }
 
     return mal 
-                            
+
+
+def prosesser( filnavn, dryrun=False ): 
+    """
+    Retter opp datafeil og mangler i vegbilde-json
+
+    OVerskriver gammal json-fil hvis nødvendig (dvs kun hvis det er gjort endringer)
+
+    ARGUMENTS
+        filnavn - fil- og mappenavn til json-fil med metadata for vegbildet
+
+    KEYWORDS 
+        dryrund = False Sett til True for å få detaljert utlisting av alle 
+                  endringer som normalt ville blitt gjort (men uten at 
+                  endringene faktisk gjennomføres. )
+
+
+    RETURNS
+        Nada 
+    """
+
+    pass 
+
+def anropnvdbapi( kall, params={} ): 
+    """
+    Anroper NVDB api V3 
+
+    ARGUMENTS: 
+        kall - full URL, eller endepunkt relativ til serveradressen for 
+                for NVDB api V3. (f.eks. /veg - endepunktet)
+
+    KEYWORDS: 
+        params = { } Dictionary med nøkkelord. For enkle oppslag er dette 
+                     overflødig, du kan like greit angi dem i kallet, f.eks. 
+                     veg?veglenkesekvens=0.111@972557
+
+    RETURNS
+        dictionary med resultater, evt None om det feiler 
+    """
+    base_url = 'https://nvdbapiles-v3.atlas.vegvesen.no'
+    if 'http' not in kall: 
+        if kall[0] != '/': 
+            kall = '/' + kall 
+        kall = base_url + kall 
+
+    headers = { "X-Client" : "nvdbapi.py V3 fra Nvdb gjengen, vegdirektoratet", 
+                 "X-Kontaktperson" : "jajens@vegvesen.no", 
+                 'Accept': 'application/vnd.vegvesen.nvdb-v3-rev1+json' }
+
+    if params: 
+        r = requests.get( kall, params=params, headers=headers )
+    else: 
+        r = requests.get( kall, headers=headers)
+
+    data = None     
+    if r.ok: 
+        data = r.json()
+        
+    return data 
+
+def fiks_exif_roadident( jsondata, filnavn, dryrun=False ):
+    """
+    Hvis den mangler - henter exif_roadident fra NVDB api V3 
+
+    ARGUMENTS: 
+        jsondata - dictionary med 
+
+    KEYWORDS 
+        dryrun = False. Bruk dryrun=True for detaljert info om hvilke endringer som blir gjort 
+                        i hvilke filer (men uten at endringene faktisk gjennomføres)
+
+    RETURNS: 
+        tuple with (jsondata, modified) hvor modified = 0 (uendret) eller 1 (endret)
+    """
+
+    modified = 0 
+    if not sjekkegenskapverdi( jsondata, 'exif_roadident', 'str' ): 
+        if sjekkegenskapverdi( jsondata, 'exif_reflinkid', 'int' ) and \
+            sjekkegenskapverdi( jsondata, 'exif_reflinkposisjon', 'float'): 
+
+            data = anropnvdbapi( 'veg?vegsystemreferanse' + jsondata['exif_reflinkposisjon'] + 
+                                '@' + jsondata['exif_reflinkid'] )
+
+            if data and 'vegsystemreferanse' in data and 'kortform' in data['vegsystemreferanse']: 
+                jsondata['exif_roadident'] = data['vegsystemreferanser']['kortform']
+                modified = 1 
+
+            else: 
+                logging.error( 'fiks_exif_roadident: Mangelfulle data ved oppslag på veglenkeposisjon' + filnavn)
+
+        else: 
+            pass # Har eksplisitt sjekk for exif_reflinkposisjon, exif_reflinkid 
+
+    return ( jsondata, modified)
 if __name__ == '__main__': 
 
     logdir  = 'test_loggdir'

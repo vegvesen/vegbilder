@@ -54,7 +54,7 @@ Grei sak, bruk gammel kode, trolig helt uten endringer. Hvert enkelt filnavn bru
 ## Del 2: Prosesser 
 
 
-| Funksjonsnavn | `Ikke avgjort`|
+| Funksjonsnavn | `prosesser`|
 |----|------|
 |Argument| Filnavn på jsonfil    |
 
@@ -68,6 +68,18 @@ Ferdig prosesserte data blir  brukt som argument til kvalitetskontrollen.
 |----|:------|
 |Argument| dict med ferdig prosesserte data    |
 |      | filnavn (for json-fil) |  
+
+
+# Navngiving av funksjoner 
+
+Alle kvalitetskontroller har navn som starter med ordet "sjekk"
+
+Alle funksjoner som inngår i å fikse opp datamangler har navn som starter med "fiks". 
+
+
+# Testdrevet utvikling 
+
+Alle nye fiksdata-rutiner starter med at det lagres en JSON-fil i /testdata/ - mappen og en test som finner feilne. Denne testen kan med fordel brukes både i QA-rutinen og i prosesseringen. 
 
 
 
