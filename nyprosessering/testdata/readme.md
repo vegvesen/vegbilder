@@ -13,6 +13,7 @@
 | manglertagg.json                | Mangler tagger: exif_vegnr, exif_speed |
 | duplikattag.json.txt                | **IGNORER. Navnekollisjon er lov i json**. Taggen exif_dato forekommer 2 ganger. | 
 
+### Testresultat for disse filene (kjørt 25.8.2020) 
 
 ```
 ERROR: skjemafeil EKSTRA tagg UlovligTagg ekstratagg testdata/ekstratagg.json
