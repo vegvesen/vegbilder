@@ -103,3 +103,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Spesifikt for dette prosjektet:
+/nyprosessering/testbilder_temp/

@@ -56,7 +56,7 @@ Grei sak, bruk gammel kode, trolig helt uten endringer. Hvert enkelt filnavn bru
 
 | Funksjonsnavn | `prosesser`|
 |----|------|
-|Argument| Filnavn på jsonfil    |
+|Argument| Filnavn på jsonfil |
 
 Gjenbruk biter av gammel kode. Behandler en og en JSON-fil. Kun evt endringer blir skrevet til fil (overskriver det som ligger fra før). 
 
@@ -76,20 +76,72 @@ Alle kvalitetskontroller har navn som starter med ordet "sjekk"
 
 Alle funksjoner som inngår i å fikse opp datamangler har navn som starter med "fiks". 
 
-
 # Testdrevet utvikling 
 
 Alle nye fiksdata-rutiner starter med at det lagres en JSON-fil i /testdata/ - mappen og en test som finner feilne. Denne testen kan med fordel brukes både i QA-rutinen og i prosesseringen. 
 
 # TODO 
 
-  * [ ] Logg alle filnavn som endres (evt også feilmeldinger?). Pass på at loggfilene ikke blir for store. 
-  * [ ] Sjekk og feilretting: Exif_reflinkid og exif_reflinkposisjon, bruk bildets koordinater. _(Og da fikser du selvsagt også senterlinjeposisjon og exif_roadident)_
-  * [ ] Sjekk og feilretting: Senterlinjeposisjon _(og fiks evt exif_roadident)_ 
-  * [ ] Sjekk og feilretting: exif_roadident (tekststreng med vegsystemreferanse) 
+  * [x] Logg alle filnavn som endres (evt også feilmeldinger?). 
+  * [ ] Pass på at loggfilene ikke blir for store. 
+  * [x] Sjekk og feilretting: Exif_reflinkid og exif_reflinkposisjon, bruk bildets koordinater. _(Og da fikser du selvsagt også senterlinjeposisjon og exif_roadident)_
+  * [x] Sjekk og feilretting: Senterlinjeposisjon _(og fiks evt exif_roadident)_ 
+  * [x] Sjekk og feilretting: exif_roadident (tekststreng med vegsystemreferanse) 
+  * [ ] Lage overordnede rutiner som kjører mot angitt katalog (huggmappetre-logikk for å ta passe store biter av gangen..) 
+  
+ 
+# STATUS per 25.8.2020
 
+Trinn 2 og 3 er ferdig skrevet, spent på hvilke feil vi får når vi kjører på reelle data. 
 
-Lage mappetre-logikk 
+Kjøring av programmet fra kommandolinje vil kjøre funksjonen "testing", som gjør følgende: 
 
+1. Kjører kvalitetssjekk på mappen /testdata, dvs QA på data med kjente feil (sjekk [/testdata/readme.md](./testdata/readme.md)) 
+2. Kopierer mappen /testdata => /testdata_temp og prosesserer denne 
+3. Kjører kvalitetssjekk på mappen /testdata_temp, dvs QA på ferdig prosesserte data
+ 
+Resultat av testkjøring 25.8.2020: 
+
+```
+INFO: Forbereder test
+========
+INFO: Kopierer testfil: testdata/ekstratagg.json
+INFO: Kopierer testfil: testdata/gyldigvegbilde.json
+INFO: Kopierer testfil: testdata/manglertagg.json
+INFO: Kopierer testfil: testdata/mangler_exif_roadident.json
+INFO: Kopierer testfil: testdata/mangler_reflinkid.json
+INFO: Kopierer testfil: testdata/mangler_reflinkposisjon.json
+INFO: Kopierer testfil: testdata/mangler_senterlinjeposisjon.json
+INFO: Kopierer testfil: testdata/mangler_vegnettilknytning.json
+INFO: Kopierer testfil: testdata/readme.md
+INFO: ##############################
+
+QA ubearbeidede data
+
+ERROR: skjemafeil EKSTRA tagg UlovligTagg ekstratagg testdata/ekstratagg.json
+ERROR: skjemafeil MANGLER tagg exif_speed exif_vegnr testdata/manglertagg.json
+ERROR: Feil dataverdier/datatyper exif_roadident testdata/mangler_exif_roadident.json
+ERROR: Feil dataverdier/datatyper exif_reflinkid testdata/mangler_reflinkid.json
+ERROR: Feil dataverdier/datatyper exif_reflinkposisjon testdata/mangler_reflinkposisjon.json
+ERROR: Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata/mangler_senterlinjeposisjon.json
+ERROR: Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata/mangler_vegnettilknytning.json
+INFO: 
+###########################
+
+Prosessering...
+
+INFO: Prosessering - retta mangler: testdata_temp/mangler_exif_roadident.json
+INFO: Prosessering - retta mangler: testdata_temp/mangler_reflinkid.json
+INFO: Prosessering - retta mangler: testdata_temp/mangler_reflinkposisjon.json
+INFO: Prosessering - retta mangler: testdata_temp/mangler_senterlinjeposisjon.json
+INFO: Prosessering - retta mangler: testdata_temp/mangler_vegnettilknytning.json
+INFO: 
+###########################
+
+QA prosesserte data...
+
+ERROR: skjemafeil EKSTRA tagg UlovligTagg ekstratagg testdata_temp/ekstratagg.json
+ERROR: skjemafeil MANGLER tagg exif_speed exif_vegnr testdata_temp/manglertagg.json
+```
 
 

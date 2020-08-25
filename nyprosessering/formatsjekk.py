@@ -14,7 +14,7 @@ import pdb
 
 # Custom libraries
 import duallog
-from flyttvegbilder_v54 import lesjsonfil
+from flyttvegbilder_v54 import lesjsonfil, skrivjsonfil
 from flyttvegbilder_v54 import findfiles, kopierfil
 
 def sjekktagger( jsondata, filnavn ):
@@ -193,6 +193,9 @@ def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir',
 
     logging.info( '\n###########################\n\nProsessering...\n')
 
+    for filnavn in kopiertefiler: 
+        prosesser( filnavn )
+
     logging.info( '\n###########################\n\nQA prosesserte data...\n')
     for filnavn in kopiertefiler: 
         jsondata = lesjsonfil( filnavn, ventetid=1) 
@@ -253,32 +256,6 @@ def vegbildejsonmal( ):
 
     return mal 
 
-
-def prosesser( filnavn, dryrun=False ): 
-    """
-    Retter opp datafeil og mangler i vegbilde-json
-
-    OVerskriver gammal json-fil hvis nødvendig (dvs kun hvis det er gjort endringer)
-
-    ARGUMENTS
-        filnavn - fil- og mappenavn til json-fil med metadata for vegbildet
-
-    KEYWORDS 
-        dryrund = False Sett til True for å få detaljert utlisting av alle 
-                  endringer som normalt ville blitt gjort (men uten at 
-                  endringene faktisk gjennomføres. )
-
-
-    RETURNS
-        Nada 
-        
-    TODO: 
-        Sjekk at vi har veglenkeID og posisjon, hent dem hvis nødvendig. Gjenbruk i så fall data til å fikse exif_roadident og 
-        senterlinjeposisjon 
-    """
-
-    pass 
-
 def anropnvdbapi( kall, params={} ): 
     """
     Anroper NVDB api V3 
@@ -310,19 +287,69 @@ def anropnvdbapi( kall, params={} ):
     else: 
         r = requests.get( kall, headers=headers)
 
-    print( r.url )
+    # print( r.url )
+
     data = None     
     if r.ok: 
         data = r.json()
         
     return data 
 
+def prosesser( filnavn, dryrun=False ): 
+    """
+    Retter opp datafeil og mangler i vegbilde-json
+
+    OVerskriver gammal json-fil hvis nødvendig (dvs kun hvis det er gjort endringer)
+
+    ARGUMENTS
+        filnavn - fil- og mappenavn til json-fil med metadata for vegbildet
+
+    KEYWORDS 
+        dryrund = False Sett til True for å få detaljert utlisting av alle 
+                  endringer som normalt ville blitt gjort (men uten at 
+                  endringene faktisk gjennomføres. )
+
+
+    RETURNS
+        Antall filer som er endra- 0 eller 1.  
+        
+    TODO: 
+        Sjekk at vi har veglenkeID og posisjon, hent dem hvis nødvendig. Gjenbruk i så fall data til å fikse exif_roadident og 
+        senterlinjeposisjon 
+    """
+
+    fiksa = 0 
+    skrevet = 0
+    jsondata = lesjsonfil( filnavn, ventetid=1)
+
+    # Fikser ting 
+    (jsondata, tmp)  = fiks_vegtilknytning( jsondata, filnavn, dryrun=dryrun)
+    fiksa += tmp
+    (jsondata, tmp)  = fiks_senterlinjeposisjon( jsondata, filnavn, dryrun=dryrun)
+    fiksa += tmp
+    (jsondata, tmp)  = fiks_exif_roadident( jsondata, filnavn, dryrun=dryrun)
+    fiksa += tmp
+
+    if dryrun:
+        if fiksa > 0: 
+            logging.info( 'Dryrun-prosessering: behov for oppdatering av ' +  filnavn)
+        else: 
+            logging.info( 'Dryrun-prosessering: Ingen feil funnet i ' + filnavn )
+
+    elif fiksa > 0: 
+        skrivjsonfil( filnavn, jsondata )
+        logging.info( 'Prosessering - retta mangler: ' + filnavn)
+        skrevet = 1
+    
+    return skrevet
+
+
 def fiks_exif_roadident( jsondata, filnavn, dryrun=False ):
     """
     Hvis den mangler - henter exif_roadident fra NVDB api V3 
 
     ARGUMENTS: 
-        jsondata - dictionary med 
+        jsondata - dictionary med metadata for et vegbilde
 
     KEYWORDS 
         dryrun = False. Bruk dryrun=True for detaljert info om hvilke endringer som blir gjort 
@@ -331,6 +358,7 @@ def fiks_exif_roadident( jsondata, filnavn, dryrun=False ):
     RETURNS: 
         tuple with (jsondata, modified) hvor modified = 0 (uendret) eller 1 (endret)
         
+        Skriver IKKE til disk, det gjør rutina som kaller denne funksjonen
 
     """
 
@@ -346,24 +374,170 @@ def fiks_exif_roadident( jsondata, filnavn, dryrun=False ):
                 jsondata['exif_roadident'] = data['vegsystemreferanse']['kortform']
                 modified = 1 
 
+                if dryrun: 
+                    logging.info( 'Dryrun - fikser egenskapverdi exif_roadident i fil: ' + filnavn )
+
             else: 
                 logging.error( 'fiks_exif_roadident: Mangelfulle data ved oppslag på veglenkeposisjon: ' + filnavn)
-        else: 
-            pass # Har eksplisitt sjekk for exif_reflinkposisjon, exif_reflinkid 
-
+  
     return ( jsondata, modified)
+
+def fiks_senterlinjeposisjon( jsondata, filnavn, dryrun=False ): 
+    """
+    Hvis den mangler - henter senterlinjeposisjon fra NVDB api V3 
+
+
+    Hvis vi mangler data for senterlinjeposisjon så vil vi også sjekke exif_roadident og 
+    evt rette den også.  Hensikten er at vi kun henter data fra NVDB api 1 gang, ikke flere. 
+
+    ARGUMENTS: 
+        jsondata - dictionary med metadata for et vegbilde
+
+    KEYWORDS 
+        dryrun = False. Bruk dryrun=True for detaljert info om hvilke endringer som blir gjort 
+                        i hvilke filer (men uten at endringene faktisk gjennomføres)
+
+    RETURNS: 
+        tuple with (jsondata, modified) hvor modified = 0 (uendret) eller 1 (endret)
+        
+        Skriver IKKE til disk, det gjør rutina som kaller denne funksjonen
+
+    """
+
+    modified = 0 
+    if not sjekkegenskapverdi( jsondata, 'senterlinjeposisjon', 'str' ): 
+        if sjekkegenskapverdi( jsondata, 'exif_reflinkid', 'int' ) and \
+            sjekkegenskapverdi( jsondata, 'exif_reflinkposisjon', 'float'): 
+
+            data = anropnvdbapi( 'veg?veglenkesekvens=' + jsondata['exif_reflinkposisjon'] + 
+                                '@' + jsondata['exif_reflinkid'] )
+
+            if data and 'vegsystemreferanse' in data and 'kortform' in data['vegsystemreferanse']: 
+                jsondata['senterlinjeposisjon'] = 'srid=5973;' + data['geometri']['wkt']
+                modified = 1 
+
+                if dryrun: 
+                    logging.info( 'Dryrun - fikser egenskapverdi senterlinjeposisjon i fil: ' + filnavn )
+
+                if not sjekkegenskapverdi( jsondata, 'exif_roadident', 'str'):
+                    jsondata['exif_roadident'] = data['vegsystemreferanse']['kortform']
+                    modified = 1 
+
+                    if dryrun: 
+                        logging.info( 'Dryrun - fikser egenskapverdi exif_roadident i fil: ' + filnavn )
+
+            else: 
+                logging.error( 'fiks_senterlinjeposisjon: Mangelfulle data ved oppslag på veglenkeposisjon: ' + filnavn)
+
+    return ( jsondata, modified)    
+
+
+def fiks_vegtilknytning( jsondata, filnavn, dryrun=False ): 
+    """
+    Hvis den mangler - henter ID og posisjon på lenkesekvens (ved oppslag på bildeposisjon)
+
+
+    Hvis vi mangler data for vegtilknytning så sjekker vi også og evt oppdaterer data for 
+    senterlinjeposisjon og exif_roadident. 
+    Hensikten er at vi kun henter data fra NVDB api 1 gang, ikke flere. 
+
+    ARGUMENTS: 
+        jsondata - dictionary med metadata for et vegbilde
+
+    KEYWORDS 
+        dryrun = False. Bruk dryrun=True for detaljert info om hvilke endringer som blir gjort 
+                        i hvilke filer (men uten at endringene faktisk gjennomføres)
+
+    RETURNS: 
+        tuple with (jsondata, modified) hvor modified = 0 (uendret) eller 1 (endret)
+        
+        Skriver IKKE til disk, det gjør rutina som kaller denne funksjonen
+
+    """
+
+    modified = 0 
+    if not sjekkegenskapverdi( jsondata, 'exif_reflinkid', 'int' ) or not sjekkegenskapverdi( jsondata, 'exif_reflinkposisjon', 'float'): 
+        if sjekkegenskapverdi( jsondata, 'exif_gpsposisjon', 'str' ): 
+
+            pos = jsondata['exif_gpsposisjon'].split()
+
+            data = anropnvdbapi( 'posisjon?lon=' + pos[2] + '&lat=' + pos[3] ) 
+            if data: 
+                data = data[0]
+
+            if data and 'veglenkesekvens' in data and 'veglenkesekvensid' in data['veglenkesekvens'] and 'relativPosisjon' in data['veglenkesekvens']: 
+
+                jsondata['exif_reflinkid'] = data['veglenkesekvens']['veglenkesekvensid']
+                jsondata['exif_reflinkposisjon'] = data['veglenkesekvens']['relativPosisjon']
+                modified = 1
+                if dryrun and modified: 
+                    logging.info( 'Dryrun - fikser vegtilknytning (exif_reflinkid, exif_reflinkposisjon, senterlinjeposisjon, exif_roadident) for ' + filnavn  )
+
+                if not sjekkegenskapverdi( jsondata, 'senterlinjeposisjon', 'str' ): 
+                    if 'geometri' in data and 'wkt' in data['geometri']: 
+                        jsondata['senterlinjeposisjon'] = 'srid=5973;' + data['geometri']['wkt']
+                    else: 
+                        logging.error( 'fiks_vegtilknytning - mangler gyldige geometridata ved oppslag på bildets GPS-posisjon: ' + filnavn)
+
+                if not sjekkegenskapverdi(  jsondata, 'exif_roadident', 'str'):
+                    if 'vegsystemreferanse' in data and 'kortform' in data['vegsystemreferanse']: 
+                        jsondata['exif_roadident'] = data['vegsystemreferanse']['kortform']
+                    else: 
+                        logging.error( 'fiks_vegtilknytning - mangler gyldig vegsystemreferanse ved oppslag på bildets GPS-posisjon: ' + filnavn )
+
+            else: 
+                logging.error( 'fiks_vegtilknytning - mangelfulle data ved oppslag på bildets GPS-posisjon: ' + filnavn)
+
+        else: 
+            logging.error( 'fiks_vegtilknytning: Mangler GPS posisjon i metadata: ' + filnavn )
+
+
+            # if data and 
+
+    # if not sjekkegenskapverdi( jsondata, 'senterlinjeposisjon', 'str' ): 
+    #     if sjekkegenskapverdi( jsondata, 'exif_reflinkid', 'int' ) and \
+    #         sjekkegenskapverdi( jsondata, 'exif_reflinkposisjon', 'float'): 
+
+    #         data = anropnvdbapi( 'veg?veglenkesekvens=' + jsondata['exif_reflinkposisjon'] + 
+    #                             '@' + jsondata['exif_reflinkid'] )
+
+    #         if data and 'vegsystemreferanse' in data and 'kortform' in data['vegsystemreferanse']: 
+    #             jsondata['senterlinjeposisjon'] = 'srid=5973;' + data['geometri']['wkt']
+    #             modified = 1 
+
+    #             if dryrun: 
+    #                 logging.info( 'Dryrun - fikser egenskapverdi senterlinjeposisjon i fil: ' + filnavn )
+
+    #             if not sjekkegenskapverdi( jsondata, 'exif_roadident', 'str'):
+    #                 jsondata['exif_roadident'] = data['vegsystemreferanse']['kortform']
+    #                 modified = 1 
+
+    #                 if dryrun: 
+    #                     logging.info( 'Dryrun - fikser egenskapverdi exif_roadident i fil: ' + filnavn )
+
+
+
+    return ( jsondata, modified)    
+
+
+
 if __name__ == '__main__': 
 
     logdir  = 'test_loggdir'
     logname = 'test_loggnavn'
     duallog.duallogSetup( logdir=logdir, logname=logname) 
 
-    mappenavn = 'testdata/'
-    jsonfiler = findfiles( '*.json', mappenavn) 
-    for filnavn in jsonfiler: 
-        jsondata = lesjsonfil( filnavn, ventetid=15) 
+    testing( )
+    # mappenavn = 'testdata/'
+    # jsonfiler = findfiles( '*.json', mappenavn) 
+    # for filnavn in jsonfiler: 
+    #     jsondata = lesjsonfil( filnavn, ventetid=1) 
+
     
-        try: 
-            kvalitetskontroll( jsondata, filnavn, kun_paakrevd=True) 
-        except AssertionError as myErr: 
-            logging.error( str( myErr) ) 
+    #     try: 
+    #         kvalitetskontroll( jsondata, filnavn, kun_paakrevd=True) 
+    #     except AssertionError as myErr: 
+    #         logging.error( str( myErr) ) 
+
+
+    #     fiksa = prosesser( filnavn, dryrun=True)
