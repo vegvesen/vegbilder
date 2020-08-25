@@ -46,9 +46,6 @@ Bygg opp koden rundt disse hoveddelene:
 
 | funksjonsnavn | Hva | Argument og nøkkelord| 
 |----|-----|-----|  
-| `prosesser` | Retter opp datafeil i bildemetadata (json) | filnavn |
-|                                                        | dryrund=False (default) |
-|                                                        | dryrund=True gir mer detaljert utlisting av aktuelle endringer, men uten å lagre endringene  |
 | `prosessermappe` | Finner alle json-filer i angitt katalog (og underkatalog), og sender dem til funksjonen `prosesser` | mappenavn  |
 | | | Evt nøkkeord sendes videre til prosesser | 
 | `finnundermappe` | Deler opp et (potensielt gigantisk) filområde i underkataloger og prosesserer dem separat | mappenavn |
@@ -60,11 +57,14 @@ Grei sak, bruk gammel kode, trolig helt uten endringer. Hvert enkelt filnavn bru
 ## Del 2: Prosesser 
 
 
-| Funksjonsnavn | `prosesser`|
-|----|------|
-|Argument| Filnavn på jsonfil |
+| funksjonsnavn | Hva | Argument og nøkkelord| 
+|----|-----|-----|  
+| `prosesser` | Retter opp datafeil i bildemetadata (json) | filnavn |
+|             |                                           | dryrund=False (default) Fikser feilene og lagrer til disk |
+|             |                                           | dryrund=True gir mer detaljert utlisting av aktuelle endringer, men lar filene ligge i fred |
 
-Gjenbruk biter av gammel kode. Behandler en og en JSON-fil. Kun evt endringer blir skrevet til fil (overskriver det som ligger fra før). 
+
+Behandler en og en JSON-fil. Kun evt endringer blir skrevet til fil (overskriver det som ligger fra før), med mindre du bruker flagget _dryrun=True_ 
 
 Ferdig prosesserte data blir  brukt som argument til kvalitetskontrollen. 
 
