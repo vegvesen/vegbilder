@@ -7,6 +7,7 @@ from pydoc import locate
 from datetime import datetime
 import dateutil.parser
 import requests 
+import glob
 
 import pdb
 
@@ -177,8 +178,6 @@ def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir',
         kopierfil( eifil, tempdir + '/' + filnavn )
 
     kopiertefiler = findfiles( '*.json', tempdir)
-    # Les mal for json-filer
-    jsonmal = vegbildejsonmal( ) 
 
 
     # QA, orginalfiler
@@ -519,6 +518,92 @@ def fiks_vegtilknytning( jsondata, filnavn, dryrun=False ):
 
     return ( jsondata, modified)    
 
+def finnfiltype( mappenavn, filetternavn='.json' ):
+    """
+    finn alle filer med angitt fil-etternavn (default=.json) i en mappe (og evt undermapper)
+
+    Returnerer liste med alle filer med dette etternavnet
+
+    ARGUMENTS:
+        mappenavn - katalogen vi skal lete i
+
+    KEYWORDS: 
+        filetternavn='.json' (default) Filetternavnet vi leter etter
+
+    RETURNS: 
+        Liste med sti (mappenavn + filnavn) til alle filer av denne typen 
+    """
+
+    filer = [ ]
+
+    for root, dirs, files in os.walk(mappenavn):
+        for f in files:
+            if os.path.splitext(f)[1] == filetternavn:
+                filer.append(  os.path.join(root, f) )
+    
+    return filer 
+
+def prosessermappe( mappenavn, **kwargs ): 
+    """
+    Finner og prsoesserer alle json-filer (metadata vegbilder) i angitt mappenavn 
+
+    Søker gjennom alle undermapper og støvsuger etter navn på json-filer som så sendes 
+    til funksjonen prosesser( filnavn ) 
+
+    ARGUMENTS: 
+        mappenavn 
+
+    KEYWORDS:
+        Hva som helst - alle nøkkelord blir alle videresendt til funksjonen prosesser
+
+    RETURNS:
+        Nada 
+    """
+
+    filer = finnfiltype(mappenavn)
+
+    logging.info( 'Prosessermappe- klar til å prosessere ' + str( len(filer)) +  ' metadata-filer under ' + mappenavn)
+    antall_fiksa = 0
+    for filnavn in filer: 
+        antall_fiksa += prosesser( filnavn, **kwargs)
+
+    logging.info( 'Prosessermappe - fiksa ' + str( antall_fiksa) + ' filer under ' + mappenavn )
+
+def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
+    """
+    Deler et (potensielt kjempedigert) mappetre i mindre underkataloger. 
+
+    Hensikten er å unngå å prøve å finne millionvis av json-filer i en katalog. I stedet
+    finner vi alle underkataloger (og evt underkataloger til dem igjen), inntil et nærmere angitt 
+    nivå relativt under rot-mappa. 
+
+    Parameteren huggMappeTre angir hvor mange nivåer av underkataloger vi skal dele opp med. 
+
+    ARGUMENTS: 
+        mappenavn - navn på katalogen vi skal støvsuge for metadata-filer (json)
+    
+    KEYWORDS: 
+        huggMappeTre: None, 0 eller antall nivåer vi skal gå nedover 
+                     før vi sender under(under)katalogen til prosessermappe( underkatalog)
+    
+    RETURNS: 
+        Nada 
+    """
+
+    if huggMappeTre: 
+    
+        logging.info( "finner undermapper til: " +  mappenavn ) 
+        huggMappeTre = huggMappeTre - 1
+        
+        folders = [f for f in glob.glob(mappenavn + "/*/")]
+        for undermappe in folders: 
+            logging.info( "fant undermappe: " + undermappe) 
+            finnundermapper( undermappe, huggMappeTre=huggMappeTre, **kwargs )
+
+    else: 
+        print( "Starter proseessering av undermappe: " + mappenavn) 
+    
+        prosessermappe( mappenavn, **kwargs)
 
 
 if __name__ == '__main__': 
@@ -527,17 +612,8 @@ if __name__ == '__main__':
     logname = 'test_loggnavn'
     duallog.duallogSetup( logdir=logdir, logname=logname) 
 
-    testing( )
-    # mappenavn = 'testdata/'
-    # jsonfiler = findfiles( '*.json', mappenavn) 
-    # for filnavn in jsonfiler: 
-    #     jsondata = lesjsonfil( filnavn, ventetid=1) 
-
-    
-    #     try: 
-    #         kvalitetskontroll( jsondata, filnavn, kun_paakrevd=True) 
-    #     except AssertionError as myErr: 
-    #         logging.error( str( myErr) ) 
-
-
+    # testing( )
+    # prosessermappe( 'testmappetre', dryrun=True)
+    finnundermapper( 'testmappetre', huggMappeTre=2, dryrun=False)
+   
     #     fiksa = prosesser( filnavn, dryrun=True)
