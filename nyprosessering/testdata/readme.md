@@ -3,9 +3,11 @@
 
 | Filnavn | Test | 
 |-----|----|
+| mangler_vegnetttilknytning.json                 | Mangler vegnetttilknytning exif_reflinkid, exif_reflinkposisjon, senterlinjeposisjon, exif_roadident  | 
+| mangler_senterlinjeposisjon.json                 | Mangler senterlinjeposisjon, exif_roadident  | 
+| mangler_exif_roadident | Nullverdi for egenskapen exif_roadident |
 | ekstratagg.json                 | Har ugyldige tagger: ekstratagg | 
 | manglertagg.json                | Mangler tagger: exif_vegnr, exif_speed |
-| null_exif_roadident | Nullverdi for egenskapen exif_roadident 1 
 | duplikattag.json.txt                | **IGNORER. Navnekollisjon er lov i json**. Taggen exif_dato forekommer 2 ganger. | 
 
 

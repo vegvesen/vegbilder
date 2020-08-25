@@ -211,7 +211,7 @@ def vegbildejsonmal( ):
             "exif_dato":                { 'type' : 'date', 'skalha' : True, 'eksempel' : "2020-06-02" },
             "exif_speed":               { 'type' : 'float', 'skalha' : False, 'eksempel' :  "0" },
             "exif_heading":             { 'type' : 'float', 'skalha' : False, 'eksempel' :  "302.295333221872"},
-            "exif_gpsposisjon":         { 'type' : 'str', 'skalha' : False, 'eksempel' :  "srid=4326;POINT Z( 6.5663939242382572 61.214710343813685 48.856250803013438 )"},
+            "exif_gpsposisjon":         { 'type' : 'str', 'skalha' : True, 'eksempel' :  "srid=4326;POINT Z( 6.5663939242382572 61.214710343813685 48.856250803013438 )"},
             "exif_strekningsnavn":      { 'type' : 'str', 'skalha' : False, 'eksempel' :  "DRAGSVIK FK X55" },
             "exif_fylke":               { 'type' : 'str', 'skalha' : False, 'eksempel' :  "46"},
             "exif_vegkat":              { 'type' : 'str', 'skalha' : False, 'eksempel' :  "F"},
@@ -245,7 +245,7 @@ def vegbildejsonmal( ):
             "exif_xptitle":             { 'type' : 'str', 'skalha' : False, 'eksempel' :  "Bilde fra ViaPhoto Recorder" },
             "exif_kvalitet":            { 'type' : 'str', 'skalha' : False, 'eksempel' :  "2" },
             "bildeid":                  { 'type' : 'str', 'skalha' : True, 'eksempel' :  "2020-06-02T09.42.46.394862_FV00013_S1D1_m00014" },
-            "senterlinjeposisjon":      { 'type' : 'str', 'skalha' : False, 'eksempel' :  "srid=4326;POINT Z( 6.5663939242382572 61.214710343813685 48.856250803013438 )" },
+            "senterlinjeposisjon":      { 'type' : 'str', 'skalha' : True, 'eksempel' :  "srid=4326;POINT Z( 6.5663939242382572 61.214710343813685 48.856250803013438 )" },
             "detekterte_objekter":      { 'type' : 'str', 'skalha' : False, 'eksempel' :  {} },
             "versjon":                  { 'type' : 'str', 'skalha' : False, 'eksempel' :  "P0.1_K20200616" },
             "mappenavn":                { 'type' : 'str', 'skalha' : False, 'eksempel' :  "Vegbilder/2020/FV00013/S1/D1/F1_2020_06_02" }
@@ -271,6 +271,10 @@ def prosesser( filnavn, dryrun=False ):
 
     RETURNS
         Nada 
+        
+    TODO: 
+        Sjekk at vi har veglenkeID og posisjon, hent dem hvis nødvendig. Gjenbruk i så fall data til å fikse exif_roadident og 
+        senterlinjeposisjon 
     """
 
     pass 
@@ -306,6 +310,7 @@ def anropnvdbapi( kall, params={} ):
     else: 
         r = requests.get( kall, headers=headers)
 
+    print( r.url )
     data = None     
     if r.ok: 
         data = r.json()
@@ -325,6 +330,8 @@ def fiks_exif_roadident( jsondata, filnavn, dryrun=False ):
 
     RETURNS: 
         tuple with (jsondata, modified) hvor modified = 0 (uendret) eller 1 (endret)
+        
+
     """
 
     modified = 0 
@@ -332,16 +339,15 @@ def fiks_exif_roadident( jsondata, filnavn, dryrun=False ):
         if sjekkegenskapverdi( jsondata, 'exif_reflinkid', 'int' ) and \
             sjekkegenskapverdi( jsondata, 'exif_reflinkposisjon', 'float'): 
 
-            data = anropnvdbapi( 'veg?vegsystemreferanse' + jsondata['exif_reflinkposisjon'] + 
+            data = anropnvdbapi( 'veg?veglenkesekvens=' + jsondata['exif_reflinkposisjon'] + 
                                 '@' + jsondata['exif_reflinkid'] )
 
             if data and 'vegsystemreferanse' in data and 'kortform' in data['vegsystemreferanse']: 
-                jsondata['exif_roadident'] = data['vegsystemreferanser']['kortform']
+                jsondata['exif_roadident'] = data['vegsystemreferanse']['kortform']
                 modified = 1 
 
             else: 
-                logging.error( 'fiks_exif_roadident: Mangelfulle data ved oppslag på veglenkeposisjon' + filnavn)
-
+                logging.error( 'fiks_exif_roadident: Mangelfulle data ved oppslag på veglenkeposisjon: ' + filnavn)
         else: 
             pass # Har eksplisitt sjekk for exif_reflinkposisjon, exif_reflinkid 
 

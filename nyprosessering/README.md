@@ -81,5 +81,15 @@ Alle funksjoner som inngår i å fikse opp datamangler har navn som starter med 
 
 Alle nye fiksdata-rutiner starter med at det lagres en JSON-fil i /testdata/ - mappen og en test som finner feilne. Denne testen kan med fordel brukes både i QA-rutinen og i prosesseringen. 
 
+# TODO 
+
+  * [ ] Logg alle filnavn som endres (evt også feilmeldinger?). Pass på at loggfilene ikke blir for store. 
+  * [ ] Sjekk og feilretting: Exif_reflinkid og exif_reflinkposisjon, bruk bildets koordinater. _(Og da fikser du selvsagt også senterlinjeposisjon og exif_roadident)_
+  * [ ] Sjekk og feilretting: Senterlinjeposisjon _(og fiks evt exif_roadident)_ 
+  * [ ] Sjekk og feilretting: exif_roadident (tekststreng med vegsystemreferanse) 
+
+
+Lage mappetre-logikk 
+
 
 

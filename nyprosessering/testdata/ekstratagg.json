@@ -39,7 +39,7 @@
     "exif_xptitle": "Bilde fra ViaPhoto Recorder",
     "exif_kvalitet": "2",
     "bildeid": "2020-06-02T09.42.46.394862_FV00013_S1D1_m00014",
-    "senterlinjeposisjon": null,
+    "senterlinjeposisjon": "srid=5973;POINT Z(47822.906 6815943.503 2.809)",
     "detekterte_objekter": {},
     "versjon": "P0.1_K20200616",
     "mappenavn": "Vegbilder/2020/FV00013/S1/D1/F1_2020_06_02"
