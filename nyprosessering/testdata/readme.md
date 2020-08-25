@@ -15,9 +15,11 @@
 
 
 ```
-ERROR: skjemafeil EKSTRA tagg ekstratagg UlovligTagg testdata/ekstratagg.json
+ERROR: skjemafeil EKSTRA tagg UlovligTagg ekstratagg testdata/ekstratagg.json
 ERROR: skjemafeil MANGLER tagg exif_speed exif_vegnr testdata/manglertagg.json
 ERROR: Feil dataverdier/datatyper exif_roadident testdata/mangler_exif_roadident.json
+ERROR: Feil dataverdier/datatyper exif_reflinkid testdata/mangler_reflinkid.json
+ERROR: Feil dataverdier/datatyper exif_reflinkposisjon testdata/mangler_reflinkposisjon.json
 ERROR: Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata/mangler_senterlinjeposisjon.json
 ERROR: Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata/mangler_vegnettilknytning.json
 ```
