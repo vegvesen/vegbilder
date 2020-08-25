@@ -44,10 +44,16 @@ Bygg opp koden rundt disse hoveddelene:
 
 ## Del 1: Finn JSON-filer 
 
-| Funksjonsnavn | `Ikke avgjort` | 
-|----|-----| 
-| Argument | Mappenavn 
-| | `huggmappetre` - parametre. 
+| funksjonsnavn | Hva | Argument og nøkkelord| 
+|----|-----|-----|  
+| `prosesser` | Retter opp datafeil i bildemetadata (json) | filnavn |
+|                                                        | dryrund=False (default) |
+|                                                        | dryrund=True gir mer detaljert utlisting av aktuelle endringer, men uten å lagre endringene  |
+| `prosessermappe` | Finner alle json-filer i angitt katalog (og underkatalog), og sender dem til funksjonen `prosesser` | mappenavn  |
+| | | Evt nøkkeord sendes videre til prosesser | 
+| `finnundermappe` | Deler opp et (potensielt gigantisk) filområde i underkataloger og prosesserer dem separat | mappenavn |
+| | | huggMappeTre=None, 0 eller passe stort heltall. Angir antall undernivåer vi skal søke før vi sender den underkatalogen til funksjonen `prosessermappe` | 
+
 
 Grei sak, bruk gammel kode, trolig helt uten endringer. Hvert enkelt filnavn brukes som argument til feilretting-prosessen 
 
@@ -87,12 +93,12 @@ Alle nye fiksdata-rutiner starter med at det lagres en JSON-fil i /testdata/ - m
   * [x] Sjekk og feilretting: Exif_reflinkid og exif_reflinkposisjon, bruk bildets koordinater. _(Og da fikser du selvsagt også senterlinjeposisjon og exif_roadident)_
   * [x] Sjekk og feilretting: Senterlinjeposisjon _(og fiks evt exif_roadident)_ 
   * [x] Sjekk og feilretting: exif_roadident (tekststreng med vegsystemreferanse) 
-  * [ ] Lage overordnede rutiner som kjører mot angitt katalog (huggmappetre-logikk for å ta passe store biter av gangen..) 
+  * [x] Lage overordnede rutiner som kjører mot angitt katalog (huggmappetre-logikk for å ta passe store biter av gangen..) 
   
  
 # STATUS per 25.8.2020
 
-Trinn 2 og 3 er ferdig skrevet, spent på hvilke feil vi får når vi kjører på reelle data. 
+Alle trinn er nå ferdig skrevet, spent på hvilke feil vi får når vi kjører på reelle data. 
 
 Kjøring av programmet fra kommandolinje vil kjøre funksjonen "testing", som gjør følgende: 
 
