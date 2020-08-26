@@ -42,54 +42,38 @@ Bygg opp koden rundt disse hoveddelene:
 1. **Prosesser** hver av disse filene. Hvis nødvendig og mulig: Fiks opp manglende data, og juster kvalitetsparameter. 
 1. **Kvalitetskontroll** Grundig kvalitetskontroll  
 
-## Del 1: Finn JSON-filer 
+## Rekkefølge 
 
-| funksjonsnavn | Hva | Argument og nøkkelord| 
-|----|-----|-----|  
-| `prosessermappe` | Finner alle json-filer i angitt katalog (og underkatalog), og sender dem til funksjonen `prosesser` | mappenavn  |
-| | | Evt nøkkeord sendes videre til prosesser | 
-| `finnundermappe` | Deler opp et (potensielt gigantisk) filområde i underkataloger og prosesserer dem separat | mappenavn |
-| | | huggMappeTre=None, 0 eller passe stort heltall. Angir antall undernivåer vi skal søke før vi sender den underkatalogen til funksjonen `prosessermappe` | 
+Flere funksjoner som spiller sammen for å håndtere digre mappehierarkier, finne filer med metadata, fikse dem og påfølgende kvalitetskontroll. Filnavn og bildeID for alle endrede metadata-elementer blir logget. Vi har loggrotasjon ved 10mb (justerbart, gå inn i `duallogg.py`). 
 
-
-Grei sak, bruk gammel kode, trolig helt uten endringer. Hvert enkelt filnavn brukes som argument til feilretting-prosessen 
-
-## Del 2: Prosesser 
-
-
-| funksjonsnavn | Hva | Argument og nøkkelord| 
-|----|-----|-----|  
-| `prosesser` | Retter opp datafeil i bildemetadata (json) | filnavn |
+ | funksjonsnavn | Hva | Argument og nøkkelord | 
+|----|-----|----- |
+| `finnundermappe` | Graver seg ned i (potensielt digert) mappehierarki og sender en og en undermappe  til funksjonen `prosessermappe` | mappenavn |
+|                  |        | finnundermappe=HELTALL Angir antall undernivåer vi skal gå nedover før vi sender mappenavnet til `prosesermappe` | 
+|                  |        | dryrun=False se `prosesser`-funksjon | 
+| `prosessermappe` | Finner alle json-filer i angitt katalog (og underkatalog), og sender dem til funksjonen `prosesser` | mappenavn | 
+|      |       | dryrun=False Se `prosesser`-funksjonen | 
+| `prosesser` | Retter opp datafeil i bildemetadata (json) Ferdig prosesserte metadata sendes til `kvalitetskontroll` | filnavn |
 |             |                                           | dryrund=False (default) Fikser feilene og lagrer til disk |
 |             |                                           | dryrund=True gir mer detaljert utlisting av aktuelle endringer, men lar filene ligge i fred |
+| `kvalitetskontroll` | Sjekker for kjente feil, som igjen utløser feilsituasjonen `AssertionError` som må håndteres med try-exept konstruksjon | dictionary med metadata | 
 
-
-Behandler en og en JSON-fil. Kun evt endringer blir skrevet til fil (overskriver det som ligger fra før), med mindre du bruker flagget _dryrun=True_ 
-
-Ferdig prosesserte data blir  brukt som argument til kvalitetskontrollen. 
-
-## Del 3: Kvalitetskontroll
-
-| Funksjonsnavn | `kvalitetskontroll`|
-|----|:------|
-|Argument| dict med ferdig prosesserte data    |
-|      | filnavn (for json-fil) |  
 
 
 # Navngiving av funksjoner 
 
-Alle kvalitetskontroller har navn som starter med ordet "sjekk"
+Funksjonen `kvalitetskontroll` bruker flere funksjoner, disse har  navn som starter med ordet "sjekk". 
 
 Alle funksjoner som inngår i å fikse opp datamangler har navn som starter med "fiks". 
 
 # Testdrevet utvikling 
 
-Alle nye fiksdata-rutiner starter med at det lagres en JSON-fil i /testdata/ - mappen og en test som finner feilne. Denne testen kan med fordel brukes både i QA-rutinen og i prosesseringen. 
+Alle nye fiksdata-rutiner starter med at det lagres en JSON-fil i /testdata/ - mappen og en test som finner akkurat denne feilen (ny "sjekk" - funksjon, eller forbedre en av dem vi har?). 
 
 # TODO 
 
   * [x] Logg alle filnavn som endres (evt også feilmeldinger?). 
-  * [ ] Pass på at loggfilene ikke blir for store. 
+  * [x] Pass på at loggfilene ikke blir for store. 
   * [x] Sjekk og feilretting: Exif_reflinkid og exif_reflinkposisjon, bruk bildets koordinater. _(Og da fikser du selvsagt også senterlinjeposisjon og exif_roadident)_
   * [x] Sjekk og feilretting: Senterlinjeposisjon _(og fiks evt exif_roadident)_ 
   * [x] Sjekk og feilretting: exif_roadident (tekststreng med vegsystemreferanse) 

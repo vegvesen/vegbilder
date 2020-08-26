@@ -1,3 +1,9 @@
+"""
+Fikser metadata (json-filer) for vegbilder. Kan gå løs på mindre biter av digre kataloger (millioner av bilder)
+
+Sjekk README.md for bruk 
+"""
+
 # Standard library 
 import json
 import logging
