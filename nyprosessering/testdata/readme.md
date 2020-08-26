@@ -13,23 +13,33 @@
 | ekstratagg.json                 | Har ugyldige tagger: ekstratagg | 
 | manglertagg.json                | Mangler tagger: exif_vegnr, exif_speed |
 
-###  Kvalitetskontroll for disse filene (kjørt 25.8.2020) 
+###  Kvalitetskontroll for disse filene (kjørt 26.8.2020) 
 
 Kjørt denne koden: 
 ```
+import logging 
 
+from formatsjekk import kvalitetskontroll, finnfiltype
+from flyttvegbilder_v54 import lesjsonfil
+import duallog
+
+duallog.duallogSetup( logdir='loggdir', logname='loggfil')
+
+filer = finnfiltype( 'testdata/allefiler_flatt', '.json' )
+
+for filnavn in filer:
+    jsondata = lesjsonfil( filnavn)
+    try:
+        kvalitetskontroll( jsondata, filnavn)
+    except AssertionError as myErr:
+        logging.warning( myErr)
 
 ```
 
+Så får du dette resultatet (per 26.8.2020) 
 
 ```
-ERROR: skjemafeil EKSTRA tagg UlovligTagg ekstratagg ekstratagg.json
-ERROR: skjemafeil MANGLER tagg exif_speed exif_vegnr manglertagg.json
-ERROR: Feil dataverdier/datatyper exif_roadident mangler_exif_roadident.json
-ERROR: Feil dataverdier/datatyper exif_reflinkid mangler_reflinkid.json
-ERROR: Feil dataverdier/datatyper exif_reflinkposisjon mangler_reflinkposisjon.json
-ERROR: Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon mangler_senterlinjeposisjon.json
-ERROR: Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon mangler_vegnettilknytning.json
+
 ```
 
 Disse filene er så fordelt i et mappe-hierarki som ser slik ut: 
