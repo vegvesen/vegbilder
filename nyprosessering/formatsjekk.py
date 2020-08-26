@@ -345,7 +345,7 @@ def prosesser( filnavn, dryrun=False ):
 
     # Fikser ting 
     (jsondata, tmp)  = fiks_vegtilknytning( jsondata, filnavn, dryrun=dryrun)
-    fiksa += tmp
+    fiksa += tmp 
     (jsondata, tmp)  = fiks_senterlinjeposisjon( jsondata, filnavn, dryrun=dryrun)
     fiksa += tmp
     (jsondata, tmp)  = fiks_exif_roadident( jsondata, filnavn, dryrun=dryrun)
@@ -358,6 +358,12 @@ def prosesser( filnavn, dryrun=False ):
             logging.info( 'Dryrun-prosessering: Ingen feil funnet i ' + filnavn )
 
     elif fiksa > 0: 
+        if sjekkegenskapverdi( jsondata, 'exif_kvalitet', 'int') and int(jsondata['exif_kvalitet']) in [0, 1, 2]: 
+            jsondata['exif_kvalitet'] = int( jsondata['exif_kvalitet']) +  0.5 
+        elif sjekkegenskapverdi( jsondata, 'exif_kvalitet', 'float'): 
+            logging.warning( "Pussig kvalitetsverdi - er fila prosessert før? exif_kvalitet=" + 
+                            jsondata['exif_kvalitet'] + ' ' + filnavn)
+
         skrivjsonfil( filnavn, jsondata )
         logging.info( 'Prosessering - retta mangler: ' + filnavn)
         skrevet = 1

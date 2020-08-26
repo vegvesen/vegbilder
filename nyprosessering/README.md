@@ -2,10 +2,10 @@
 
 Vi har laget en ny prosesseringskjede for etterbehandling (kvalitetsheving) og kontroll av metadata for vegbilder. 
 
-I `formatsjekk.py` har vi byggget funksjoner som spiller sammen for å håndtere digre mappehierarkier, finne filer med metadata, fikse dem og påfølgende kvalitetskontroll. Filnavn og bildeID for alle endrede metadata-elementer blir logget. Vi har loggrotasjon ved 10mb (justerbart, gå inn i `duallogg.py`). Der det var praktisk har vi gjenbrukt funksjoner fra den prosesseringskjeden vi hadde før (`flyttvegbilder_v54.py`). 
+I `formatsjekk.py` har vi byggget funksjoner som spiller sammen for å håndtere digre mappehierarkier, finne filer med metadata, fikse dem og påfølgende kvalitetskontroll. Filnavn og bildeID for alle endrede metadata-elementer blir logget. Vi har loggrotasjon ved 10mb (justerbart, gå inn i `duallogg.py`). Der det var praktisk har vi gjenbrukt funksjoner fra den prosesseringskjeden vi hadde før (`duallog.py, flyttvegbilder_v54.py`). 
 
 Koden har disse hoveddelene: 
-1. **Finn** alle json-filer i en katalog (fullstendig mappe- og filnavn). Gjenbruk `huggmappetre`-logikken for å unngå å søke etter og holde på millionvis av filnavn samtidig. 
+1. **Finn** alle json-filer i en katalog (fullstendig mappe- og filnavn). Gjenbruk `huggmappetre`-logikken for å unngå å lete og holde kontroll på millionvis av filnavn samtidig. 
 1. **Prosesser** hver av disse filene. Hvis nødvendig og mulig: Fiks opp manglende data, og juster kvalitetsparameter. 
 1. **Kvalitetskontroll** Grundig kvalitetskontroll  
 
@@ -33,7 +33,7 @@ Alle funksjoner som inngår i å fikse opp datamangler (dvs kalles av funksjonen
 
 # Testdrevet utvikling 
 
-Alle nye fiksdata-rutiner starter med at det lagres en eller flere JSON-fil(er) i /testdata/ - mappen og en test som finner akkurat denne feilen. Så lages det en feilrettingsfunksjon ("fiks*"). 
+Alle nye fiksdata-rutiner starter med at det lagres en eller flere JSON-fil(er) i /testdata/ - mappen og en test som finner akkurat denne feilen (ny "sjekk"-funksjon). Så lages det en tilsvarende feilrettingsfunksjon ("fiks"). 
 
 # TODO 
 
@@ -43,7 +43,9 @@ Alle nye fiksdata-rutiner starter med at det lagres en eller flere JSON-fil(er) 
   * [x] Sjekk og feilretting: Senterlinjeposisjon _(og fiks evt exif_roadident)_ 
   * [x] Sjekk og feilretting: exif_roadident (tekststreng med vegsystemreferanse) 
   * [x] Lage overordnede rutiner som kjører mot angitt katalog (huggmappetre-logikk for å ta passe store biter av gangen..) 
-  * [ ] Juster kvalitetstagg `exif_kvalitet`
+  * [x] Juster kvalitetstagg `exif_kvalitet` **Griseenkelt, men godt nok?** 
+    * Øker tallverdien med +0.5
+    * Prosesseringa har sjekk for å se om verdien avviker fra 0, 1 eller 2 => Warning. 
   
 # Kvalitetsparameter exif_kvalitet
 
@@ -72,80 +74,83 @@ Kjøring av test gjøres med `python formatsjekk.py`, eksempel på resultat:
 
 
 ```
-2020-08-26 13:52:55,236 INFO    :  
-2020-08-26 13:52:55,238 INFO    :  ====> Forbereder test
-2020-08-26 13:52:55,239 INFO    :  
-2020-08-26 13:52:55,239 INFO    :  ====> Kopierer testdata-mappe fra testdata => testdata_temp
-2020-08-26 13:52:55,307 INFO    :  
-2020-08-26 13:52:55,308 INFO    :  ====> Kvalitetskontroll, ikke prosesserte filer i testdata_temp
-2020-08-26 13:52:55,308 INFO    :        Her kommer det masse WARNING-meldinger...
+2020-08-26 16:05:06,955 INFO    :  
+2020-08-26 16:05:06,957 INFO    :  ====> Forbereder test
+2020-08-26 16:05:06,957 INFO    :  
+2020-08-26 16:05:06,958 INFO    :  ====> Kopierer testdata-mappe fra testdata => testdata_temp
+2020-08-26 16:05:07,008 INFO    :  
+2020-08-26 16:05:07,008 INFO    :  ====> Kvalitetskontroll, ikke prosesserte filer i testdata_temp
+2020-08-26 16:05:07,009 INFO    :        Her kommer det masse WARNING-meldinger...
 
-2020-08-26 13:52:55,311 WARNING : skjemafeil EKSTRA tagg ekstratagg UlovligTagg testdata_temp/allefiler_flatt/ekstratagg.json
-2020-08-26 13:52:55,317 WARNING : skjemafeil MANGLER tagg exif_vegnr exif_speed testdata_temp/allefiler_flatt/manglertagg.json
-2020-08-26 13:52:55,321 WARNING : Feil dataverdier/datatyper exif_roadident testdata_temp/allefiler_flatt/mangler_exif_roadident.json
-2020-08-26 13:52:55,323 WARNING : Feil dataverdier/datatyper exif_reflinkid testdata_temp/allefiler_flatt/mangler_reflinkid.json
-2020-08-26 13:52:55,326 WARNING : Feil dataverdier/datatyper exif_reflinkposisjon testdata_temp/allefiler_flatt/mangler_reflinkposisjon.json
-2020-08-26 13:52:55,330 WARNING : Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata_temp/allefiler_flatt/mangler_senterlinjeposisjon.json
-2020-08-26 13:52:55,332 WARNING : Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata_temp/allefiler_flatt/mangler_vegnettilknytning.json
-2020-08-26 13:52:55,336 WARNING : Feil dataverdier/datatyper exif_roadident testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_exif_roadident.json
-2020-08-26 13:52:55,338 WARNING : Feil dataverdier/datatyper exif_reflinkid testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_reflinkid.json
-2020-08-26 13:52:55,343 WARNING : Feil dataverdier/datatyper exif_reflinkposisjon testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_reflinkposisjon.json
-2020-08-26 13:52:55,345 WARNING : Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_senterlinjeposisjon.json
-2020-08-26 13:52:55,347 WARNING : Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_vegnettilknytning.json
-2020-08-26 13:52:55,353 WARNING : Feil dataverdier/datatyper exif_roadident testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_exif_roadident.json
-2020-08-26 13:52:55,355 WARNING : Feil dataverdier/datatyper exif_reflinkid testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_reflinkid.json
-2020-08-26 13:52:55,358 WARNING : Feil dataverdier/datatyper exif_reflinkposisjon testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_reflinkposisjon.json
-2020-08-26 13:52:55,360 WARNING : Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_senterlinjeposisjon.json
-2020-08-26 13:52:55,363 WARNING : Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_vegnettilknytning.json
-2020-08-26 13:52:55,364 INFO    :  
-2020-08-26 13:52:55,365 INFO    :  ====> Prosesserer flat filstruktur-mappe testdata_temp/allefiler_flatt
+2020-08-26 16:05:07,012 WARNING : skjemafeil EKSTRA tagg ekstratagg UlovligTagg testdata_temp/allefiler_flatt/ekstratagg.json
+2020-08-26 16:05:07,017 WARNING : skjemafeil MANGLER tagg exif_speed exif_vegnr testdata_temp/allefiler_flatt/manglertagg.json
+2020-08-26 16:05:07,018 WARNING : Feil dataverdier/datatyper exif_roadident testdata_temp/allefiler_flatt/mangler_exif_roadident.json
+2020-08-26 16:05:07,020 WARNING : Feil dataverdier/datatyper exif_roadident testdata_temp/allefiler_flatt/mangler_exif_roadident_feil_kvalitetsparameter.json
+2020-08-26 16:05:07,023 WARNING : Feil dataverdier/datatyper exif_reflinkid testdata_temp/allefiler_flatt/mangler_reflinkid.json
+2020-08-26 16:05:07,024 WARNING : Feil dataverdier/datatyper exif_reflinkposisjon testdata_temp/allefiler_flatt/mangler_reflinkposisjon.json
+2020-08-26 16:05:07,026 WARNING : Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata_temp/allefiler_flatt/mangler_senterlinjeposisjon.json
+2020-08-26 16:05:07,027 WARNING : Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata_temp/allefiler_flatt/mangler_vegnettilknytning.json
+2020-08-26 16:05:07,033 WARNING : Feil dataverdier/datatyper exif_roadident testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_exif_roadident.json
+2020-08-26 16:05:07,035 WARNING : Feil dataverdier/datatyper exif_reflinkid testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_reflinkid.json
+2020-08-26 16:05:07,037 WARNING : Feil dataverdier/datatyper exif_reflinkposisjon testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_reflinkposisjon.json
+2020-08-26 16:05:07,039 WARNING : Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_senterlinjeposisjon.json
+2020-08-26 16:05:07,041 WARNING : Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_vegnettilknytning.json
+2020-08-26 16:05:07,045 WARNING : Feil dataverdier/datatyper exif_roadident testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_exif_roadident.json
+2020-08-26 16:05:07,047 WARNING : Feil dataverdier/datatyper exif_reflinkid testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_reflinkid.json
+2020-08-26 16:05:07,049 WARNING : Feil dataverdier/datatyper exif_reflinkposisjon testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_reflinkposisjon.json
+2020-08-26 16:05:07,051 WARNING : Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_senterlinjeposisjon.json
+2020-08-26 16:05:07,053 WARNING : Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_vegnettilknytning.json
+2020-08-26 16:05:07,053 INFO    :  
+2020-08-26 16:05:07,054 INFO    :  ====> Prosesserer flat filstruktur-mappe testdata_temp/allefiler_flatt
 
-2020-08-26 13:52:55,366 INFO    : Prosessermappe- klar til å prosessere 8 metadata-filer under testdata_temp/allefiler_flatt
-2020-08-26 13:52:55,369 ERROR   : skjemafeil EKSTRA tagg ekstratagg UlovligTagg testdata_temp/allefiler_flatt/ekstratagg.json
-2020-08-26 13:52:55,374 ERROR   : skjemafeil MANGLER tagg exif_vegnr exif_speed testdata_temp/allefiler_flatt/manglertagg.json
-2020-08-26 13:52:55,575 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_exif_roadident.json
-2020-08-26 13:52:55,718 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_reflinkid.json
-2020-08-26 13:52:55,863 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_reflinkposisjon.json
-2020-08-26 13:52:56,011 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_senterlinjeposisjon.json
-2020-08-26 13:52:56,122 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_vegnettilknytning.json
-2020-08-26 13:52:56,125 INFO    : Prosessermappe - fiksa 5 filer under testdata_temp/allefiler_flatt
-2020-08-26 13:52:56,125 INFO    :  
-2020-08-26 13:52:56,126 INFO    :  ====> Finner undermapper til testdata_temp3 nivåeer ned, prosesserer hver enkelt undermappe
+2020-08-26 16:05:07,055 INFO    : Prosessermappe- klar til å prosessere 9 metadata-filer under testdata_temp/allefiler_flatt
+2020-08-26 16:05:07,056 ERROR   : skjemafeil EKSTRA tagg ekstratagg UlovligTagg testdata_temp/allefiler_flatt/ekstratagg.json
+2020-08-26 16:05:07,063 ERROR   : skjemafeil MANGLER tagg exif_speed exif_vegnr testdata_temp/allefiler_flatt/manglertagg.json
+2020-08-26 16:05:07,222 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_exif_roadident.json
+2020-08-26 16:05:07,403 WARNING : Pussig kvalitetsverdi - er fila prosessert før? exif_kvalitet=2.5 testdata_temp/allefiler_flatt/mangler_exif_roadident_feil_kvalitetsparameter.json
+2020-08-26 16:05:07,414 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_exif_roadident_feil_kvalitetsparameter.json
+2020-08-26 16:05:07,544 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_reflinkid.json
+2020-08-26 16:05:07,653 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_reflinkposisjon.json
+2020-08-26 16:05:07,803 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_senterlinjeposisjon.json
+2020-08-26 16:05:07,946 INFO    : Prosessering - retta mangler: testdata_temp/allefiler_flatt/mangler_vegnettilknytning.json
+2020-08-26 16:05:07,952 INFO    : Prosessermappe - fiksa 6 filer under testdata_temp/allefiler_flatt
+2020-08-26 16:05:07,953 INFO    :  
+2020-08-26 16:05:07,954 INFO    :  ====> Finner undermapper til testdata_temp3 nivåeer ned, prosesserer hver enkelt undermappe
 
-2020-08-26 13:52:56,127 INFO    : finner undermapper til: testdata_temp
-2020-08-26 13:52:56,128 INFO    : fant undermappe: testdata_temp/allefiler_flatt/
-2020-08-26 13:52:56,130 INFO    : finner undermapper til: testdata_temp/allefiler_flatt/
-2020-08-26 13:52:56,131 INFO    : fant undermappe: testdata_temp/undermappeA/
-2020-08-26 13:52:56,133 INFO    : finner undermapper til: testdata_temp/undermappeA/
-2020-08-26 13:52:56,134 INFO    : fant undermappe: testdata_temp/undermappeA/nivaa2/
-2020-08-26 13:52:56,135 INFO    : finner undermapper til: testdata_temp/undermappeA/nivaa2/
-2020-08-26 13:52:56,136 INFO    : fant undermappe: testdata_temp/undermappeA/nivaa2/nivaa3/
-2020-08-26 13:52:56,137 INFO    : Starter proseessering av undermappe: testdata_temp/undermappeA/nivaa2/nivaa3/
-2020-08-26 13:52:56,138 INFO    : Prosessermappe- klar til å prosessere 6 metadata-filer under testdata_temp/undermappeA/nivaa2/nivaa3/
-2020-08-26 13:52:56,293 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_exif_roadident.json
-2020-08-26 13:52:56,440 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_reflinkid.json
-2020-08-26 13:52:56,594 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_reflinkposisjon.json
-2020-08-26 13:52:56,744 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_senterlinjeposisjon.json
-2020-08-26 13:52:56,895 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_vegnettilknytning.json
-2020-08-26 13:52:56,900 INFO    : Prosessermappe - fiksa 5 filer under testdata_temp/undermappeA/nivaa2/nivaa3/
-2020-08-26 13:52:56,901 INFO    : fant undermappe: testdata_temp/undermappeB/
-2020-08-26 13:52:56,903 INFO    : finner undermapper til: testdata_temp/undermappeB/
-2020-08-26 13:52:56,905 INFO    : fant undermappe: testdata_temp/undermappeB/nivaa2/
-2020-08-26 13:52:56,909 INFO    : finner undermapper til: testdata_temp/undermappeB/nivaa2/
-2020-08-26 13:52:56,911 INFO    : fant undermappe: testdata_temp/undermappeB/nivaa2/nivaa3/
-2020-08-26 13:52:56,912 INFO    : Starter proseessering av undermappe: testdata_temp/undermappeB/nivaa2/nivaa3/
-2020-08-26 13:52:56,917 INFO    : Prosessermappe- klar til å prosessere 6 metadata-filer under testdata_temp/undermappeB/nivaa2/nivaa3/
-2020-08-26 13:52:57,058 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_exif_roadident.json
-2020-08-26 13:52:57,197 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_reflinkid.json
-2020-08-26 13:52:57,345 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_reflinkposisjon.json
-2020-08-26 13:52:57,509 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_senterlinjeposisjon.json
-2020-08-26 13:52:57,666 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_vegnettilknytning.json
-2020-08-26 13:52:57,674 INFO    : Prosessermappe - fiksa 5 filer under testdata_temp/undermappeB/nivaa2/nivaa3/
-2020-08-26 13:52:57,674 INFO    :  
-2020-08-26 13:52:57,676 INFO    :  ====> Sluttkontroll prosesserte data i testdata_temp...
+2020-08-26 16:05:07,957 INFO    : finner undermapper til: testdata_temp
+2020-08-26 16:05:07,962 INFO    : fant undermappe: testdata_temp/allefiler_flatt/
+2020-08-26 16:05:07,964 INFO    : finner undermapper til: testdata_temp/allefiler_flatt/
+2020-08-26 16:05:07,965 INFO    : fant undermappe: testdata_temp/undermappeA/
+2020-08-26 16:05:07,968 INFO    : finner undermapper til: testdata_temp/undermappeA/
+2020-08-26 16:05:07,971 INFO    : fant undermappe: testdata_temp/undermappeA/nivaa2/
+2020-08-26 16:05:07,971 INFO    : finner undermapper til: testdata_temp/undermappeA/nivaa2/
+2020-08-26 16:05:07,976 INFO    : fant undermappe: testdata_temp/undermappeA/nivaa2/nivaa3/
+2020-08-26 16:05:07,978 INFO    : Starter proseessering av undermappe: testdata_temp/undermappeA/nivaa2/nivaa3/
+2020-08-26 16:05:07,983 INFO    : Prosessermappe- klar til å prosessere 6 metadata-filer under testdata_temp/undermappeA/nivaa2/nivaa3/
+2020-08-26 16:05:08,091 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_exif_roadident.json
+2020-08-26 16:05:08,199 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_reflinkid.json
+2020-08-26 16:05:08,315 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_reflinkposisjon.json
+2020-08-26 16:05:08,422 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_senterlinjeposisjon.json
+2020-08-26 16:05:08,524 INFO    : Prosessering - retta mangler: testdata_temp/undermappeA/nivaa2/nivaa3/nivaa4/mangler_vegnettilknytning.json
+2020-08-26 16:05:08,526 INFO    : Prosessermappe - fiksa 5 filer under testdata_temp/undermappeA/nivaa2/nivaa3/
+2020-08-26 16:05:08,526 INFO    : fant undermappe: testdata_temp/undermappeB/
+2020-08-26 16:05:08,527 INFO    : finner undermapper til: testdata_temp/undermappeB/
+2020-08-26 16:05:08,528 INFO    : fant undermappe: testdata_temp/undermappeB/nivaa2/
+2020-08-26 16:05:08,528 INFO    : finner undermapper til: testdata_temp/undermappeB/nivaa2/
+2020-08-26 16:05:08,529 INFO    : fant undermappe: testdata_temp/undermappeB/nivaa2/nivaa3/
+2020-08-26 16:05:08,530 INFO    : Starter proseessering av undermappe: testdata_temp/undermappeB/nivaa2/nivaa3/
+2020-08-26 16:05:08,531 INFO    : Prosessermappe- klar til å prosessere 6 metadata-filer under testdata_temp/undermappeB/nivaa2/nivaa3/
+2020-08-26 16:05:08,640 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_exif_roadident.json
+2020-08-26 16:05:08,766 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_reflinkid.json
+2020-08-26 16:05:08,882 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_reflinkposisjon.json
+2020-08-26 16:05:08,994 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_senterlinjeposisjon.json
+2020-08-26 16:05:09,118 INFO    : Prosessering - retta mangler: testdata_temp/undermappeB/nivaa2/nivaa3/nivaa4/mangler_vegnettilknytning.json
+2020-08-26 16:05:09,126 INFO    : Prosessermappe - fiksa 5 filer under testdata_temp/undermappeB/nivaa2/nivaa3/
+2020-08-26 16:05:09,127 INFO    :  
+2020-08-26 16:05:09,128 INFO    :  ====> Sluttkontroll prosesserte data i testdata_temp...
 
-2020-08-26 13:52:57,683 WARNING : skjemafeil EKSTRA tagg ekstratagg UlovligTagg testdata_temp/allefiler_flatt/ekstratagg.json
-2020-08-26 13:52:57,692 WARNING : skjemafeil MANGLER tagg exif_vegnr exif_speed testdata_temp/allefiler_flatt/manglertagg.json
+2020-08-26 16:05:09,133 WARNING : skjemafeil EKSTRA tagg ekstratagg UlovligTagg testdata_temp/allefiler_flatt/ekstratagg.json
+2020-08-26 16:05:09,138 WARNING : skjemafeil MANGLER tagg exif_speed exif_vegnr testdata_temp/allefiler_flatt/manglertagg.json
 ```
 
 

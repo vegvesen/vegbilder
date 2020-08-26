@@ -12,10 +12,11 @@
 | mangler_exif_roadident | Nullverdi for egenskapen exif_roadident |
 | ekstratagg.json                 | Har ugyldige tagger: ekstratagg | 
 | manglertagg.json                | Mangler tagger: exif_vegnr, exif_speed |
+| mangler_exif_roadident_feil_kvalitetsparameter.json                | Mangler tagger: exif_roadident og har samtidig verdien `exif_kvalitet="2.5"`. Dette gir warning fra prosesseringssteget. |
 
 ###  Kvalitetskontroll for disse filene (kjørt 26.8.2020) 
 
-Kjørt denne koden: 
+Kjørt denne koden (`testscript_enkelt.py`)
 ```
 import logging 
 
@@ -40,8 +41,9 @@ Så får du dette resultatet (per 26.8.2020)
 
 ```
 WARNING: skjemafeil EKSTRA tagg UlovligTagg ekstratagg testdata/allefiler_flatt/ekstratagg.json
-WARNING: skjemafeil MANGLER tagg exif_vegnr exif_speed testdata/allefiler_flatt/manglertagg.json
+WARNING: skjemafeil MANGLER tagg exif_speed exif_vegnr testdata/allefiler_flatt/manglertagg.json
 WARNING: Feil dataverdier/datatyper exif_roadident testdata/allefiler_flatt/mangler_exif_roadident.json
+WARNING: Feil dataverdier/datatyper exif_roadident testdata/allefiler_flatt/mangler_exif_roadident_feil_kvalitetsparameter.json
 WARNING: Feil dataverdier/datatyper exif_reflinkid testdata/allefiler_flatt/mangler_reflinkid.json
 WARNING: Feil dataverdier/datatyper exif_reflinkposisjon testdata/allefiler_flatt/mangler_reflinkposisjon.json
 WARNING: Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata/allefiler_flatt/mangler_senterlinjeposisjon.json
@@ -55,19 +57,18 @@ Merk at funksjonen `kvalitetskontroll` kaster en `AssertionError` for hvert avvi
 For å teste `huggmappetre`-logikken (unngå å lese millionvis av filer  filene er så fordelt i et mappe-hierarki som ser slik ut: 
 
 ```
-testdata
 testdata/
 ├── readme.md                       <=== Denne fila du leser nå
 ├── allefiler_flatt                 <=== Filene omtalt over
 │   ├── ekstratagg.json
 │   ├── gyldigvegbilde.json
 │   ├── mangler_exif_roadident.json
+│   ├── mangler_exif_roadident_feil_kvalitetsparameter.json
 │   ├── mangler_reflinkid.json
 │   ├── mangler_reflinkposisjon.json
 │   ├── mangler_senterlinjeposisjon.json
 │   ├── mangler_vegnettilknytning.json
 │   ├── manglertagg.json
-│   └── readme.md
 ├── undermappeA                     <=== Mappehierarki for å teste "huggmappetre" - logikken 
 │   └── nivaa2
 │       ├── nivaa3_mappeA

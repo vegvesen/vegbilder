@@ -105,4 +105,4 @@ venv.bak/
 .mypy_cache/
 
 # Spesifikt for dette prosjektet:
-/nyprosessering/testbilder_temp/*
+/nyprosessering/testdata_temp/*
