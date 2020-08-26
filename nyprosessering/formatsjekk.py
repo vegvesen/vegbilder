@@ -14,6 +14,7 @@ from datetime import datetime
 import dateutil.parser
 import requests 
 import glob
+from distutils.dir_util import copy_tree
 
 import pdb
 
@@ -165,7 +166,8 @@ def kvalitetskontroll( jsondata, filnavn, kun_paakrevd=True):
     egenskapsjekk = sjekk_alle_egenskaper( jsondata, kun_paakrevd=kun_paakrevd)
     assert egenskapsjekk == '', ' '.join( ['Feil dataverdier/datatyper',  egenskapsjekk,  filnavn ] )
                             
-def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir', logname='test_loggnavn' ):
+def testing( testdata='testdata', tempdir='testdata_temp', 
+                logdir='test_loggdir', logname='test_loggnavn', huggMappeTre=3 ):
     """
     Kjører gjennom testdata
 
@@ -174,41 +176,50 @@ def testing( testdata='testdata', tempdir='testdata_temp', logdir='test_logdir',
     """
 
     duallog.duallogSetup( logdir=logdir, logname=logname) 
-    testfiler = findfiles( '*', testdata )
-    logging.info( 'Forbereder test\n========')
+    testfiler = finnfiltype(testdata, filetternavn='.json' )
 
-    Path(  tempdir ).mkdir( parents=True, exist_ok=True )
-    for eifil in testfiler: 
-        logging.info( 'Kopierer testfil: ' + eifil )
-        (rot, filnavn) = os.path.split( eifil )
-        kopierfil( eifil, tempdir + '/' + filnavn )
+    fremhev = ' ====> '
+    logging.info( ' ')
+    logging.info( fremhev + 'Forbereder test')
+    logging.info( ' ')
+    logging.info(  fremhev + 'Kopierer testdata-mappe fra ' + testdata + ' => ' + tempdir )
 
-    kopiertefiler = findfiles( '*.json', tempdir)
+    copy_tree( testdata, tempdir )
 
+    logging.info( ' ')
+    logging.info( fremhev + 'Kvalitetskontroll, ikke prosesserte filer i ' + tempdir )
+    logging.info(    '       Her kommer det masse WARNING-meldinger...\n')
 
-    # QA, orginalfiler
-    testfiler = findfiles( '*.json', testdata)
-    logging.info( '##############################\n\nQA ubearbeidede data\n')
-    for filnavn in testfiler: 
-        jsondata = lesjsonfil( filnavn, ventetid=1)
-        try: 
-            kvalitetskontroll( jsondata, filnavn) 
-        except AssertionError as myErr: 
-            logging.error( str( myErr) ) 
-
-    logging.info( '\n###########################\n\nProsessering...\n')
-
-    for filnavn in kopiertefiler: 
-        prosesser( filnavn )
-
-    logging.info( '\n###########################\n\nQA prosesserte data...\n')
+    kopiertefiler = finnfiltype( tempdir,  '.json')
     for filnavn in kopiertefiler: 
         jsondata = lesjsonfil( filnavn, ventetid=1) 
 
         try: 
             kvalitetskontroll( jsondata, filnavn) 
         except AssertionError as myErr: 
-            logging.error( str( myErr) ) 
+            logging.warning( str( myErr) ) 
+
+    logging.info( ' ')
+    logging.info(  fremhev + 'Prosesserer flat filstruktur-mappe ' + tempdir + '/allefiler_flatt\n')
+
+    prosessermappe( tempdir  + '/allefiler_flatt')
+
+    logging.info( ' ')
+    logging.info(  fremhev + 'Finner undermapper til ' + tempdir + str( huggMappeTre) + ' nivåeer ned, prosesserer hver enkelt undermappe\n')
+
+    finnundermapper( tempdir, huggMappeTre=huggMappeTre) 
+
+    logging.info( ' ')
+    logging.info(  fremhev + 'Sluttkontroll prosesserte data i ' + tempdir + '...\n')
+
+
+    for filnavn in kopiertefiler: 
+        jsondata = lesjsonfil( filnavn, ventetid=1) 
+
+        try: 
+            kvalitetskontroll( jsondata, filnavn) 
+        except AssertionError as myErr: 
+            logging.warning( str( myErr) ) 
 
 
 def vegbildejsonmal( ): 
@@ -627,7 +638,7 @@ def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
             finnundermapper( undermappe, huggMappeTre=huggMappeTre, **kwargs )
 
     else: 
-        print( "Starter proseessering av undermappe: " + mappenavn) 
+        logging.info( "Starter proseessering av undermappe: " + mappenavn) 
     
         prosessermappe( mappenavn, **kwargs)
 
