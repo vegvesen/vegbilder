@@ -39,10 +39,20 @@ for filnavn in filer:
 Så får du dette resultatet (per 26.8.2020) 
 
 ```
-
+WARNING: skjemafeil EKSTRA tagg UlovligTagg ekstratagg testdata/allefiler_flatt/ekstratagg.json
+WARNING: skjemafeil MANGLER tagg exif_vegnr exif_speed testdata/allefiler_flatt/manglertagg.json
+WARNING: Feil dataverdier/datatyper exif_roadident testdata/allefiler_flatt/mangler_exif_roadident.json
+WARNING: Feil dataverdier/datatyper exif_reflinkid testdata/allefiler_flatt/mangler_reflinkid.json
+WARNING: Feil dataverdier/datatyper exif_reflinkposisjon testdata/allefiler_flatt/mangler_reflinkposisjon.json
+WARNING: Feil dataverdier/datatyper exif_roadident, senterlinjeposisjon testdata/allefiler_flatt/mangler_senterlinjeposisjon.json
+WARNING: Feil dataverdier/datatyper exif_reflinkid, exif_reflinkposisjon, exif_roadident, senterlinjeposisjon testdata/allefiler_flatt/mangler_vegnettilknytning.json
 ```
 
-Disse filene er så fordelt i et mappe-hierarki som ser slik ut: 
+Merk at funksjonen `kvalitetskontroll` kaster en `AssertionError` for hvert avvik den finner. Disse feilene må fanges (try-except), samt deretter velger rett loggenivå (ERROR, WARNING, INFO, DEBUG) med `logging`-modulen.
+
+# Mappestruktr 
+
+For å teste `huggmappetre`-logikken (unngå å lese millionvis av filer  filene er så fordelt i et mappe-hierarki som ser slik ut: 
 
 ```
 testdata
