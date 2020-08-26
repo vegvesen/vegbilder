@@ -365,7 +365,7 @@ def prosesser( filnavn, dryrun=False ):
                             jsondata['exif_kvalitet'] + ' ' + filnavn)
 
         skrivjsonfil( filnavn, jsondata )
-        logging.info( 'Prosessering - retta mangler: ' + filnavn)
+        logging.info( 'Prosessering - retta mangler: ' + jsondata['bildeid'] + ' ' + filnavn)
         skrevet = 1
     
     try: 
