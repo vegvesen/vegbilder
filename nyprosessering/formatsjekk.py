@@ -597,6 +597,7 @@ def prosessermappe( mappenavn, **kwargs ):
     logname = 'loggnavn'
     duallog.duallogSetup( logdir=logdir, logname=logname) 
 
+    t0 = datetime.now() 
 
     filer = finnfiltype(mappenavn)
 
@@ -605,9 +606,10 @@ def prosessermappe( mappenavn, **kwargs ):
     for filnavn in filer: 
         antall_fiksa += prosesser( filnavn, **kwargs)
 
-    logging.info( 'Prosessermappe - fiksa ' + str( antall_fiksa) + ' filer under ' + mappenavn )
+    tidsbruk = datetime.now() - t0 
+    logging.info( 'Prosessermappe - fiksa ' + str( antall_fiksa) + ' filer under ' + mappenavn + ' tidsbruk: ' + str( round( tidsbruk.total_seconds() ) ) + ' sekund'  )
 
-def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
+def finnundermapper( mappenavn, huggMappeTre=None, firstIterasjon=True, **kwargs):
     """
     Deler et (potensielt kjempedigert) mappetre i mindre underkataloger. 
 
@@ -623,6 +625,8 @@ def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
     KEYWORDS: 
         huggMappeTre: None, 0 eller antall nivåer vi skal gå nedover 
                      før vi sender under(under)katalogen til prosessermappe( underkatalog)
+
+        firstiteration: Holder styr på om vi er første nivå i iterasjonen
     
     RETURNS: 
         Nada 
@@ -631,7 +635,7 @@ def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
     logname = 'loggnavn'
     duallog.duallogSetup( logdir=logdir, logname=logname) 
 
-
+    t0 = datetime.now() 
 
     if huggMappeTre: 
     
@@ -641,7 +645,7 @@ def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
         folders = [f for f in glob.glob(mappenavn + "/*/")]
         for undermappe in folders: 
             logging.info( "fant undermappe: " + undermappe) 
-            finnundermapper( undermappe, huggMappeTre=huggMappeTre, **kwargs )
+            finnundermapper( undermappe, huggMappeTre=huggMappeTre, firstIterasjon=False, **kwargs )
 
     else: 
         logging.info( "Starter proseessering av undermappe: " + mappenavn) 
@@ -649,9 +653,18 @@ def finnundermapper( mappenavn, huggMappeTre=None, **kwargs):
         prosessermappe( mappenavn, **kwargs)
 
 
+    if firstIterasjon: 
+        tidsbruk = datetime.now() - t0 
+        logging.info( "Ferdig med å gå gjennom alle undermapper til " + mappenavn + ", tidsbruk " + str( round( tidsbruk.total_seconds() ) ) + ' sekund'  )
+
+
 if __name__ == '__main__': 
 
-    testing( )
+    mappe = '/mnt/c/DATA/leveranser/vegbilder/bilder/2020/RV00022'
+    finnundermapper( mappe, huggMappeTre=2, dryrun=False)
+    # prosessermappe( mappe) 
+
+    # testing( )
     # prosessermappe( 'testmappetre', dryrun=True)
     # finnundermapper( 'testmappetre', huggMappeTre=2, dryrun=False)
    
