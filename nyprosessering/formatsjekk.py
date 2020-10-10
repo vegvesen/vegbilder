@@ -82,6 +82,24 @@ def sjekk_alle_egenskaper( jsondata, kun_paakrevd=True ):
 
     return returnValue
 
+def filnavndata( filnavn ): 
+    """
+    Utleder dataverdier fra filnavn 
+
+    ARGUMENTS
+        filnavn : Tekst string
+
+    KEYWORDS
+        None 
+
+    RETURNS
+        Dictionary med medatdata avledet fra filnavn 
+    """
+    filnavn = 'Fy06_Ev134_hp04_f1_m00031.json'
+    biter = filnavn.split( '_')
+    
+
+
 def sjekkegenskapverdi( jsondata, taggnavn, taggtype ): 
     """
     Sjekker om en taggen har fornuftig verdi og datatype 
