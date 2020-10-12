@@ -87,17 +87,33 @@ def filnavndata( filnavn ):
     Utleder dataverdier fra filnavn 
 
     ARGUMENTS
-        filnavn : Tekst string
+        filnavn : Tekst string. Kan være kun filnavn, eller komplett evt relativt 
+                  sti til fil. Takler både forward og backward slash. 
 
     KEYWORDS
         None 
 
     RETURNS
-        Dictionary med medatdata avledet fra filnavn 
+        Dictionary med medatdata avledet fra filnavn, eller None hvis feil 
     """
-    filnavn = 'Fy06_Ev134_hp04_f1_m00031.json'
-    biter = filnavn.split( '_')
-    
+    # Takler både back- og forwardslash (og kombinasjoner av disse) 
+    biter = filnavn.split('/')[-1].split('\\')[-1].split( '_' )
+    mydict = {}
+ 
+    try: 
+        mydict['fylke']   = int( biter[0].lower().split('fy')[1] )
+        mydict['vegkat']  = biter[1][0]
+        mydict['vegstat'] = biter[1][1]
+        mydict['vegnr']   = int( biter[1][2:])
+        mydict['hp']      = int( biter[2].lower().split('hp')[1] )
+        mydict['felt']    = int( biter[3].lower().split('f' )[1] )
+        mydict['meter']   = int( biter[4].lower().split('.' )[0].split('m')[1] )
+
+    except (IndexError, ValueError): 
+        logging.warning( 'Ugyldig filnavn - klarte ikke utlede metadata: ' + filnavn )
+        return None 
+    else: 
+        return mydict
 
 
 def sjekkegenskapverdi( jsondata, taggnavn, taggtype ): 
