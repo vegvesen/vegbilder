@@ -87,7 +87,7 @@ def filnavndata( filnavn ):
     Utleder dataverdier fra filnavn 
 
     ARGUMENTS
-        filnavn : Tekst string. Kan være kun filnavn, eller komplett evt relativt 
+        filnavn : Tekst string. Kan være kun filnavn, eller komplett / relativt 
                   sti til fil. Takler både forward og backward slash. 
 
     KEYWORDS

@@ -104,5 +104,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# Vscode
+.vscode/
 # Spesifikt for dette prosjektet:
 /nyprosessering/testdata_temp/*
