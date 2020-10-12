@@ -374,16 +374,19 @@ def prosesser( filnavn, dryrun=False ):
 
 
     fiksa = 0 
+    fiksa_filnavn = 0
     skrevet = 0
     jsondata = lesjsonfil( filnavn, ventetid=1)
 
     # Fikser ting 
-    (jsondata, tmp)  = fiks_vegtilknytning( jsondata, filnavn, dryrun=dryrun)
+    (jsondata, tmp)         = fiks_vegtilknytning( jsondata, filnavn, dryrun=dryrun)
     fiksa += tmp 
-    (jsondata, tmp)  = fiks_senterlinjeposisjon( jsondata, filnavn, dryrun=dryrun)
+    (jsondata, tmp)         = fiks_senterlinjeposisjon( jsondata, filnavn, dryrun=dryrun)
     fiksa += tmp
-    (jsondata, tmp)  = fiks_exif_roadident( jsondata, filnavn, dryrun=dryrun)
+    (jsondata, tmp)         = fiks_exif_roadident( jsondata, filnavn, dryrun=dryrun)
     fiksa += tmp
+    # (jsondata, filnavn, tmp) = fiks_sjekkfilnavn( jsondata, filnavn, dryrun=dryrun) 
+    # fiksa_filnavn += tmp
 
     if dryrun:
         if fiksa > 0: 
@@ -407,7 +410,56 @@ def prosesser( filnavn, dryrun=False ):
     except AssertionError as myErr: 
         logging.error( str( myErr) ) 
 
+    if fiksa_filnavn > 0: 
+        logging.warning( "Endret feil filnavn på " + str( fiksa_filnavn) + " vegbilder (.jpg, .json, .webp)")
+
     return skrevet
+
+def fiks_sjekkfilnavn( jsondata, filnavn, dryrun=False):
+    """
+    Sjekker metadata-innhold mot filnavn og evt døper om bildefiler + metadata om det trengs
+
+    TODO: IKKE IMPLEMENTERT! 
+
+    """ 
+
+    modified = 0 
+    return (jsondata, filnavn, modified)
+
+def lagfilnavn( jsondata, filnavn): 
+    """
+    Lager nytt (og korrekt!) filnavn ut fra metadata, uten filetternavn (.json, .jpg)
+
+    ARGUMENTS
+        jsondata - dictionary med metadata
+        
+        filnavn - string, eksisterende (gammelt) filnavn (for logging/feilsøking om det går galt)
+    KEYWORDS: 
+        None 
+
+    RETURNS: 
+        filnavn - tekststreng med nytt filnavn, eller None hvis det feiler
+    """ 
+    try: 
+        if jsondata['exif_vegkat'].upper() in ['E', 'R']: 
+            padding = 3
+        else: 
+            padding = 5
+        
+        filnavn = 'Fy' + str(jsondata['exif_fylke']).zfill(2)                + '_' + \
+                    jsondata['exif_vegkat'].upper() + jsondata['exif_vegstat'].lower() + \
+                    str(jsondata['exif_vegnr']).zfill(padding)               + '_' + \
+                    'hp' + str( jsondata['exif_hp']).zfill(3)                + '_' + \
+                    'f'  + str( jsondata['exif_felt'])
+
+
+    except KeyError as e: 
+        logging.error(  str(e) + 'Klarte ikke lage nytt filnavn for fil: ' + filnavn )
+        return None 
+
+    else: 
+        return filnavn 
+
 
 
 def fiks_exif_roadident( jsondata, filnavn, dryrun=False ):
