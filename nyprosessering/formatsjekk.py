@@ -345,6 +345,29 @@ def anropnvdbapi( kall, params={} ):
         
     return data 
 
+def prosesser_sjekkfilnavn( mappenavn, loggfilnavn=None ):
+    """
+    Finner og sjekker filnavn opp mot datainnhold for alle json-filer (metadata vegbilder) i angitt mappenavn 
+
+    Søker gjennom alle undermapper og støvsuger etter navn på json-filer som så sendes 
+    til funksjonen XXXX ( filnavn ) 
+
+    ARGUMENTS: 
+    mappenavn 
+
+    KEYWORDS:
+    loggfilnavn: None eller tekststreng. Hvis angitt logges filnavn på alle ikke-godkjente filer til dette filnavnet. 
+
+    Ellers hva som helst - alle nøkkelord blir alle videresendt til funksjonen XXX
+
+    RETURNS:
+    Nada 
+    """
+    pass
+
+    raise NotImplementedError( "Denne funksjonen lager vi snart!")
+
+
 def prosesser( filnavn, dryrun=False ): 
     """
     Retter opp datafeil og mangler i vegbilde-json
@@ -417,48 +440,98 @@ def prosesser( filnavn, dryrun=False ):
 
 def fiks_sjekkfilnavn( jsondata, filnavn, dryrun=False):
     """
-    Sjekker metadata-innhold mot filnavn og evt døper om bildefiler + metadata om det trengs
+    Sjekker metadata-innhold mot filnavn. 
 
-    TODO: IKKE IMPLEMENTERT! 
+    Denne versjonen gjør to ting hvis det er mismatch mellom filnavn og metadata
+          1) Logger feil til fil fil (til konsoll, eller  egen, dedikert fil TODO)
+          2) Endrer exif_filnavn slik at det stememr med det reelle navnet 
+
+    I en senere versjon kan vi vurdere å evt døper om bildefiler + metadata. Kanskje. 
+
+    TODO: Logge feil direkte til fil? 
+
+    ARGUMENTS
+        jsondata - metadata lest fra jsonfil
+
+        filnavn - 
 
     """ 
 
     modified = 0 
+
+
+    jpgfilnavn = os.path.splitext( filnavn )[0] + '.jpg'
+    feil = [ ]
+
+    # Utleder dataverdier fra reelt filnavn og jsondata-filnavn
+    fndata = filnavndata( filnavn )
+    jsdata = filnavndata( jsondata['exif_filnavn']) 
+
+    # Sjekker om filnavn stemmer 
+    if os.path.split( filnavn )[0].lower( ) != jpgfilnavn.lower(): 
+        feil.append( 'Endrer filnavn JSON-metadata' )
+
+        if not dryrun: 
+            jsondata['exif_filnavn'] = jpgfilnavn
+    
+    # Sjekker dataverdier 
+    feil_dataverdi = []
+    if fndata and jsdata: 
+        for tagg in ['fylke', 'vegkat', 'vegstat', 'vegnr', 'hp', 'meter']: 
+            if str( fndata[tagg] ).lower() != str( jsdata[tagg]).lower(): 
+                feil_dataverdi.append( tagg + ': ' + str( fndata[tagg]) + ' vs ' + str( jsdata[tagg]) )
+
+        if len( feil_dataverdi ) > 0: 
+            feil.append(  ', '.join( feil_dataverdi  )  )
+
+    elif fndata: 
+        feil.append( 'JSON-data filnavn har ugyldig syntaks: ' + os.path.split( json['exif_filnavn'])[1] )
+    elif jsdata: 
+        feil.append( 'Reelt filnavn har ugyldig syntaks')
+    else:
+        feil.append( 'Både JSON-data filnavn og reelt filnavn har ugyldig syntaks')
+
+    if len( feil) > 0: 
+        modified = True 
+        # TODO: Logge filnavn til fil? 
+        feil.append( filnavn )
+        logging.info( 'Filnavn-feil: ' + ', '.join(  feil  )  )
+
     return (jsondata, filnavn, modified)
 
-def lagfilnavn( jsondata, filnavn): 
-    """
-    Lager nytt (og korrekt!) filnavn ut fra metadata, uten filetternavn (.json, .jpg)
+# def lagfilnavn( jsondata, filnavn): 
+#     """
+#     Lager nytt (og korrekt!) filnavn ut fra metadata, uten filetternavn (.json, .jpg)
 
-    ARGUMENTS
-        jsondata - dictionary med metadata
+#     ARGUMENTS
+#         jsondata - dictionary med metadata
         
-        filnavn - string, eksisterende (gammelt) filnavn (for logging/feilsøking om det går galt)
-    KEYWORDS: 
-        None 
+#         filnavn - string, eksisterende (gammelt) filnavn (for logging/feilsøking om det går galt)
+#     KEYWORDS: 
+#         None 
 
-    RETURNS: 
-        filnavn - tekststreng med nytt filnavn, eller None hvis det feiler
-    """ 
-    try: 
-        if jsondata['exif_vegkat'].upper() in ['E', 'R']: 
-            padding = 3
-        else: 
-            padding = 5
+#     RETURNS: 
+#         filnavn - tekststreng med nytt filnavn, eller None hvis det feiler
+#     """ 
+#     try: 
+#         if jsondata['exif_vegkat'].upper() in ['E', 'R']: 
+#             padding = 3
+#         else: 
+#             padding = 5
         
-        filnavn = 'Fy' + str(jsondata['exif_fylke']).zfill(2)                + '_' + \
-                    jsondata['exif_vegkat'].upper() + jsondata['exif_vegstat'].lower() + \
-                    str(jsondata['exif_vegnr']).zfill(padding)               + '_' + \
-                    'hp' + str( jsondata['exif_hp']).zfill(3)                + '_' + \
-                    'f'  + str( jsondata['exif_felt'])
+#         filnavn = 'Fy' + str(jsondata['exif_fylke']).zfill(2)                + '_' + \
+#                     jsondata['exif_vegkat'].upper() + jsondata['exif_vegstat'].lower() + \
+#                     str(jsondata['exif_vegnr']).zfill(padding)               + '_' + \
+#                     'hp' + str( jsondata['exif_hp']).zfill(3)                + '_' + \
+#                     'f'  + str( jsondata['exif_felt'])
 
 
-    except KeyError as e: 
-        logging.error(  str(e) + 'Klarte ikke lage nytt filnavn for fil: ' + filnavn )
-        return None 
+#     except KeyError as e: 
+#         logging.error(  str(e) + 'Klarte ikke lage nytt filnavn for fil: ' + filnavn )
+#         return None 
 
-    else: 
-        return filnavn 
+#     else: 
+#         return filnavn 
 
 
 
@@ -712,7 +785,7 @@ def finnundermapper( mappenavn, huggMappeTre=None, firstIterasjon=True, **kwargs
         huggMappeTre: None, 0 eller antall nivåer vi skal gå nedover 
                      før vi sender under(under)katalogen til prosessermappe( underkatalog)
 
-        firstiteration: Holder styr på om vi er første nivå i iterasjonen
+        firstiteration: Holder styr på om vi er første nivå i iterasjonen. Ikke tukle med denne! 
     
     RETURNS: 
         Nada 
