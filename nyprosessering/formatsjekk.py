@@ -345,27 +345,48 @@ def anropnvdbapi( kall, params={} ):
         
     return data 
 
-def prosesser_sjekkfilnavn( mappenavn, loggfilnavn=None ):
+def prosesser_fiksfilnavn( mappenavn, loggfilnavn=None, dryrun=False ):
     """
     Finner og sjekker filnavn opp mot datainnhold for alle json-filer (metadata vegbilder) i angitt mappenavn 
 
     Søker gjennom alle undermapper og støvsuger etter navn på json-filer som så sendes 
-    til funksjonen XXXX ( filnavn ) 
+    til funksjonen filks_sjekkfilnavn ( jsondata, filnavn  ) 
 
     ARGUMENTS: 
-    mappenavn 
+        mappenavn 
 
     KEYWORDS:
-    loggfilnavn: None eller tekststreng. Hvis angitt logges filnavn på alle ikke-godkjente filer til dette filnavnet. 
+        loggfilnavn: None eller tekststreng. Hvis angitt logges filnavn på alle ikke-godkjente filer til dette filnavnet. 
+        TODO: IKKE IMPLEMENTERT (ennå)
 
-    Ellers hva som helst - alle nøkkelord blir alle videresendt til funksjonen XXX
+        dryrun: Boolsk, False (default) | True. Kjører analyseprosessen, men uten å gjøre reelle endringer i (meta)data på disk
 
     RETURNS:
     Nada 
     """
-    pass
+    logdir  = 'loggdir'
+    logname = 'loggnavn'
+    duallog.duallogSetup( logdir=logdir, logname=logname) 
 
-    raise NotImplementedError( "Denne funksjonen lager vi snart!")
+    filer = finnfiltype(mappenavn, filetternavn='.json')
+    logging.info( 'Klar til å sjekke/fikse filnavn for ' + str( len( filer )) + ' filer under ' + mappenavn  )
+    antall_fiksa = 0
+    for filnavn in filer: 
+        jsondata = lesjsonfil( filnavn )
+        (jsondata, filnavn, modified ) = fiks_sjekkfilnavn(jsondata, filnavn, dryrun=dryrun)
+        if modified: 
+            antall_fiksa += 1
+            if not dryrun: 
+                skrivjsonfil( filnavn, jsondata)
+
+    oppdatert = 'Fant og fiksa filnavnfeil i '
+    if dryrun: 
+        oppdatert = 'Fant, men fiksa IKKE filnavnfeil i '
+
+    if antall_fiksa > 0: 
+        logging.info( oppdatert + str( antall_fiksa) + ' vegbilder i mappe ' + mappenavn )
+    else: 
+        logging.info( 'Fant ingen filnavnfeil i ' + mappenavn)        
 
 
 def prosesser( filnavn, dryrun=False ): 
@@ -451,14 +472,21 @@ def fiks_sjekkfilnavn( jsondata, filnavn, dryrun=False):
     TODO: Logge feil direkte til fil? 
 
     ARGUMENTS
-        jsondata - metadata lest fra jsonfil
+        jsondata:  dictionary, metadata lest fra jsonfil
 
-        filnavn - 
+        filnavn: Filnavn til json-fil med metadata 
 
+    KEYWORDS
+        dryrun: Boolsk, False (default), True. Hvis True så gjøres ingen reelle endringer i jsondata
+
+    RETURNS 
+        jsondata - dictionary med metadata lest fra filnavn, evt oppdatert med riktig filnavn hvis nødvendig
+                    (og ikke dryrun)
+        filnavn - uendret
+        modified - boolsk, True hvis jsondata er oppdatert. 
     """ 
 
-    modified = 0 
-
+    modified = False 
 
     jpgfilnavn = os.path.splitext( filnavn )[0] + '.jpg'
     feil = [ ]
@@ -470,6 +498,7 @@ def fiks_sjekkfilnavn( jsondata, filnavn, dryrun=False):
     # Sjekker om filnavn stemmer 
     if os.path.split( filnavn )[0].lower( ) != jpgfilnavn.lower(): 
         feil.append( 'Endrer filnavn JSON-metadata' )
+        modified = True 
 
         if not dryrun: 
             jsondata['exif_filnavn'] = jpgfilnavn
@@ -758,7 +787,7 @@ def prosessermappe( mappenavn, **kwargs ):
 
     t0 = datetime.now() 
 
-    filer = finnfiltype(mappenavn)
+    filer = finnfiltype(mappenavn, filetternavn='.json')
 
     logging.info( 'Prosessermappe- klar til å prosessere ' + str( len(filer)) +  ' metadata-filer under ' + mappenavn)
     antall_fiksa = 0
@@ -768,7 +797,7 @@ def prosessermappe( mappenavn, **kwargs ):
     tidsbruk = datetime.now() - t0 
     logging.info( 'Prosessermappe - fiksa ' + str( antall_fiksa) + ' filer under ' + mappenavn + ' tidsbruk: ' + str( round( tidsbruk.total_seconds() ) ) + ' sekund'  )
 
-def finnundermapper( mappenavn, huggMappeTre=None, firstIterasjon=True, **kwargs):
+def finnundermapper( mappenavn, typeprosess='posisjon', huggMappeTre=None, firstIterasjon=True, **kwargs):
     """
     Deler et (potensielt kjempedigert) mappetre i mindre underkataloger. 
 
@@ -784,6 +813,11 @@ def finnundermapper( mappenavn, huggMappeTre=None, firstIterasjon=True, **kwargs
     KEYWORDS: 
         huggMappeTre: None, 0 eller antall nivåer vi skal gå nedover 
                      før vi sender under(under)katalogen til prosessermappe( underkatalog)
+
+        typeprosess: tekststreng, 'posisjon' | 'filnavn' | 'alle'. Hva slags type prosess som skal kjøres
+                      på metadata. Aktuelle verdier: 
+                      'posisjon' (default): Fikser opp i vegtilknytning, finner posisjon etc. 
+                      'filnavn'  Sjekker filnavn, logger filnavn-feil og evt retter opp filnavnet i metadata. 
 
         firstiteration: Holder styr på om vi er første nivå i iterasjonen. Ikke tukle med denne! 
     
@@ -809,8 +843,11 @@ def finnundermapper( mappenavn, huggMappeTre=None, firstIterasjon=True, **kwargs
     else: 
         logging.info( "Starter proseessering av undermappe: " + mappenavn) 
     
-        prosessermappe( mappenavn, **kwargs)
-
+        if typeprosess.lower() in [ 'posisjon', 'alle']: 
+            prosessermappe( mappenavn, **kwargs)
+        
+        if typeprosess.lower() in ['filnavn', 'alle']:
+            prosesser_fiksfilnavn( mappenavn, **kwargs)
 
     if firstIterasjon: 
         tidsbruk = datetime.now() - t0 
@@ -819,8 +856,8 @@ def finnundermapper( mappenavn, huggMappeTre=None, firstIterasjon=True, **kwargs
 
 if __name__ == '__main__': 
 
-    mappe = '/mnt/c/DATA/leveranser/vegbilder/bilder/2020/RV00022'
-    finnundermapper( mappe, huggMappeTre=2, dryrun=False)
+    mappe = '/mnt/c/data/leveranser/vegbilder/test_filnavn'
+    finnundermapper( mappe, huggMappeTre=2, dryrun=True)
     # prosessermappe( mappe) 
 
     # testing( )
