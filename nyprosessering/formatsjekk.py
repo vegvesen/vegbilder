@@ -488,7 +488,7 @@ def fiks_sjekkfilnavn( jsondata, filnavn, dryrun=False):
 
     modified = False 
 
-    jpgfilnavn = os.path.splitext( filnavn )[0] + '.jpg'
+    jpgfilnavn = os.path.splitext( os.path.split( filnavn )[1] )[0] + '.jpg'
     feil = [ ]
 
     # Utleder dataverdier fra reelt filnavn og jsondata-filnavn
@@ -496,10 +496,10 @@ def fiks_sjekkfilnavn( jsondata, filnavn, dryrun=False):
     jsdata = filnavndata( jsondata['exif_filnavn']) 
 
     # Sjekker om filnavn stemmer 
-    if os.path.split( filnavn )[0].lower( ) != jpgfilnavn.lower(): 
+    if jsondata['exif_filnavn'].lower()  !=  jpgfilnavn.lower(): 
         feil.append( 'Endrer filnavn JSON-metadata' )
         modified = True 
-
+        
         if not dryrun: 
             jsondata['exif_filnavn'] = jpgfilnavn
     
