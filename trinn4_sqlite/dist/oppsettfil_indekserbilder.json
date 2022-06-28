@@ -1,9 +1,0 @@
-{ "info" : "Oppsettfil for indekservegbilder",
-  "datadir" : [ "../../testbilder_prosessert/ny_stedfesting" ], 
-  "rotURL" : "https://utv.vegvesen.no/kart/vegbilder/",
-  "database" : "nyeindekser.sqlite/vegbilder", 
-  "IKKEIBRUK_gammel_database" : "gammeldb.sqlite/alleredeindeksert", 
-  "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
-  "logname"      : "indekservegbilder", 
-  "logdir"       : "loggfiler_indekservegbilder"
-  }

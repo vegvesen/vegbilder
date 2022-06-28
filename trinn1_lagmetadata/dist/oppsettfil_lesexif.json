@@ -1,8 +1,0 @@
-{ "info" : "JSON parametre for vegbilder_lesexif", 
-    "datadir" : "../../testbilder_prosessert/orginal_stedfesting",
-  "info2": "Kan også inneholde valgfri parameter overskrivGammalJson = true | false", 
-  "overskrivGammalJson" : false, 
-  "info3" : "Logger skrives til mappe logdir med filnavn logname + dato og tidsstempel.log", 
-  "logname"      : "lesexif_", 
-  "logdir"       : "loggfiler_lesexif"
-  }

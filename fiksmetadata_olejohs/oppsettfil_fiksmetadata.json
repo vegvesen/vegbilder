@@ -1,0 +1,8 @@
+{ "info" : "Oppsettfil for fiksmetadata.py",
+    "inputdir" : [ "/mnt/c/DATA/leveranser/vegbilder/fiksmetadata_olejohs/bildejson/mappeA" ], 
+    "outputdir" :  "/mnt/c/DATA/leveranser/vegbilder/fiksmetadata_olejohs/bildejson/outputdir", 
+  "logname"      : "fiksmetadata", 
+  "logdir"       : "loggfiler_fiksmetadata", 
+  "info_huggMappeTre" : "huggMappeTre = 1 : Prosesserer hver undermappe av datadir for seg; 2 = hver under-undermappe for seg osv",
+  "huggMappeTre" : 0
+  }

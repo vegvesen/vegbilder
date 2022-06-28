@@ -1,7 +1,0 @@
-{ "info" : "Oppsettfil for fikstegnsett",
-  "datadir" : [ "/mnt/c/DATA/leveranser/vegbilder/gigantfiler" ], 
-  "logname"      : "fikstegnsett", 
-  "logdir"       : "loggfiler_fikstegnsett", 
-  "info_huggMappeTre" : "huggMappeTre = 1 : Prosesserer hver undermappe av datadir for seg; 2 = hver under-undermappe for seg osv",
-  "huggMappeTre" : 0
-  }
