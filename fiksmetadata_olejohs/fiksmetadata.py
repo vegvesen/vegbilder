@@ -183,7 +183,7 @@ def finnundermapper( enmappe:str, inputdir:str, outputdir:str, huggMappeTre=None
         folders = [f for f in glob.glob(enmappe + "/*/")]
         for undermappe in folders: 
             logging.info( "fant undermappe: " + undermappe) 
-            finnundermapper( undermappe, outputdir, **kwargs )
+            finnundermapper( undermappe, inputdir, outputdir, **kwargs )
 
     else: 
         print( "Starter proseessering av undermappe: " + enmappe) 
@@ -197,7 +197,7 @@ if __name__ == '__main__':
     logdir = 'log'
     logname = 'fiksmetadata'
     t0 = datetime.now()
-    versjonsinfo = "Fiksmetadata filinfo JSON Versjon 1.0 den 28.6.2022"
+    versjonsinfo = "Fiksmetadata filinfo JSON Versjon 1.1 den 28.6.2022"
     print( versjonsinfo ) 
     
     if len( sys.argv) < 2: 
